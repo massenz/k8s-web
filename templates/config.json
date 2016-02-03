@@ -1,0 +1,31 @@
+{
+    "version": 1,
+    "background_sec": 3600,
+    "config_url": "https://config.itunes.apple.com/tlogger/api/1/config",
+    "config_content_type": "application/json",
+
+    "upload_url": "https://myuserxp.itunes.apple.com/WebObjects/MZUserXP.woa/wa/ReceiptStats",
+    "content_accept": "application/x-www-form-urlencoded",
+
+    "default_interval_sec": 300,
+    "default_timeout_sec": 30,
+
+    "urls": [
+        {
+            "name": "Health Check MZFinance",
+            "value": "https://buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/healthCheck",
+
+            "count": 30,
+            "interval_sec": 120,
+            "ignore_errors": true
+        },
+        {
+            "name": "Storefront Health Check",
+            "value": "https://itunes.apple.com/WebObjects/MZStore.woa/wa/healthCheck",
+
+            "count": 22,
+            "interval_sec": 120,
+            "ignore_errors": true
+        }
+    ]
+}

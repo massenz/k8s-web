@@ -204,6 +204,12 @@ def upload_data(migration_id):
     return make_response(jsonify(resp_data))
 
 
+@application.route('/api/1/config')
+def get_urls():
+    resp = make_response(render_template('config.json'))
+    resp.headers['Content-Type'] = 'application/json'
+    return resp
+
 @application.errorhandler(ResponseError)
 def handle_invalid_usage(error):
     logging.error(error.message)

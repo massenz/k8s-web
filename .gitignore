@@ -23,3 +23,7 @@ requirements.txt.freeze
 src/sentinel.egg-info/
 
 .elasticbeanstalk/
+
+# Virtualenv location -not the best of names
+bin/
+

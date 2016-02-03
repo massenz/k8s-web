@@ -1,13 +1,12 @@
 # Requirements for simple-flask
 
 Flask==0.10.1
-Jinja2==2.7.1
-argparse==1.2.1
-pymongo==2.6.3
-python-dateutil==2.2
-simplejson==3.3.2
-six==1.5.2
-virtualenv==1.11.2
-virtualenvwrapper==4.2
-wsgiref==0.1.2
-
+itsdangerous==0.24
+Jinja2==2.8
+MarkupSafe==0.23
+pymongo==3.2.1
+python-dateutil==2.4.2
+simplejson==3.8.1
+six==1.10.0
+Werkzeug==0.11.3
+wheel==0.26.0
