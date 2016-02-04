@@ -33,6 +33,13 @@ from utils import choose, SaneBool
 FORMAT = '%(asctime)-15s [%(levelname)s] %(message)s'
 DATE_FMT = '%m/%d/%Y %H:%M:%S'
 
+DATA_UPLOAD_FILE = 'data_upload.log'
+
+ITUNES = "https://mzuserxp.itunes.apple.com/WebObjects/MZUserXP.woa/wa/ReceiptStats"
+
+LOCAL = "http://localhost:{port}/api/1/upload"
+
+
 #: Flask App, must be global
 application = Flask(__name__)
 
@@ -206,9 +213,27 @@ def upload_data(migration_id):
 
 @application.route('/api/1/config')
 def get_urls():
-    resp = make_response(render_template('config.json'))
+    upload_dest = request.args.get('upload')
+    upload_url = ITUNES
+    if upload_dest == 'local':
+        upload_url = LOCAL.format(port=application.config['PORT'])
+    resp = make_response(render_template('config.json', upload_url=upload_url))
     resp.headers['Content-Type'] = 'application/json'
     return resp
+
+
+@application.route('/api/1/upload', methods=['POST'])
+def post_data():
+    if not os.path.exists(get_workdir()):
+        msg = "Erro: directory {} does not exist on server".format(get_workdir())
+        logging.error(msg)
+        return make_response(msg, 404)
+
+    data_file = os.path.join(get_workdir(), DATA_UPLOAD_FILE)
+    with open(data_file, 'a') as data:
+        for key, value in request.form.iteritems():
+            data.write("{key}: {value}\n".format(key=key, value=value))
+    return 'ok'
 
 @application.errorhandler(ResponseError)
 def handle_invalid_usage(error):
@@ -240,6 +265,9 @@ def prepare_env(config=None):
         # TODO: move to a loogin.yaml configuration with proper handlers and loggers configuration
         loglevel = logging.DEBUG if verbose else logging.INFO
         logging.basicConfig(format=FORMAT, datefmt=DATE_FMT, level=loglevel)
+
+        # Flask apparently does not store this internally.
+        application.config['PORT'] = config.port
 
         # Flask application configuration
         application.config['DEBUG'] = SaneBool(choose('FLASK_DEBUG', False, config, 'debug'))
