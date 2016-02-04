@@ -33,11 +33,11 @@ from utils import choose, SaneBool
 FORMAT = '%(asctime)-15s [%(levelname)s] %(message)s'
 DATE_FMT = '%m/%d/%Y %H:%M:%S'
 
+# TODO: These have been moved to the YAML configuration
 DATA_UPLOAD_FILE = 'data_upload.log'
-
 ITUNES = "https://mzuserxp.itunes.apple.com/WebObjects/MZUserXP.woa/wa/ReceiptStats"
-
-LOCAL = "http://localhost:{port}/api/1/upload"
+# TODO: replace the hard-coded hostname string with a dynamic discovery.
+LOCAL = "http://mmassenzio-pro.apple.com:{port}/api/1/upload"
 
 
 #: Flask App, must be global
@@ -187,28 +187,6 @@ def download_data():
     response.headers["Content-Type"] = "application/json"
     response.data = get_data(fname)
     return response
-
-
-@application.route('/api/v1/<migration_id>', methods=['POST'])
-def upload_data(migration_id):
-    try:
-        as_uuid = uuid.UUID(migration_id)
-    except ValueError:
-        raise UuidNotValid("Could not convert {0} to a valid UUID".format(migration_id))
-    logging.info('Uploading compressed logs data for {0}'.format(as_uuid))
-    file_type = request.args.get('type', 'zip')
-    fname = build_fname(migration_id, ext=file_type)
-    if not os.path.exists(os.path.dirname(fname)):
-        os.makedirs(os.path.dirname(fname), 0775)
-    with open(fname, 'w') as file_out:
-        file_out.write(request.data)
-    resp_data = {
-        'filename': fname,
-        'saved': True,
-        'file_size': os.path.getsize(fname)
-    }
-    logging.info('File {filename} saved, size {file_size} bytes'.format(**resp_data))
-    return make_response(jsonify(resp_data))
 
 
 @application.route('/api/1/config')

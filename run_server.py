@@ -30,9 +30,8 @@ def parse_args():
                                                              "disables authentication")
     parser.add_argument('--secret-key', help='Used by the flask server to encrypt secure cookies')
     parser.add_argument('--workdir', help="Where to store files, must be an absolute path",
-                        default='/tmp/simple-flask/data')
-    parser.add_argument('--db_uri', help='The URI to the MongoDB server',
-                        default='mongodb://localhost:27017')
+                        default='/tmp')
+    parser.add_argument('--db_uri', help='The URI to the MongoDB server')
     return parser.parse_args()
 
 
