@@ -17,9 +17,10 @@ import argparse
 import datetime
 import logging
 import os
+import time
+import uuid
 
 # Flask imports
-import uuid
 from flask import (
     Flask,
     make_response,
@@ -35,7 +36,7 @@ DATE_FMT = '%m/%d/%Y %H:%M:%S'
 
 # TODO: These have been moved to the YAML configuration
 DATA_UPLOAD_FILE = 'data_upload.log'
-ITUNES = "https://mzuserxp.itunes.apple.com/WebObjects/MZUserXP.woa/wa/ReceiptStats"
+ITUNES = "https://mzuserxp.itunes.apple.com/WebObjects/MZUserXP.woa/wa/recordStats"
 # TODO: replace the hard-coded hostname string with a dynamic discovery.
 LOCAL = "http://mmassenzio-pro.apple.com:{port}/api/1/upload"
 
@@ -200,18 +201,22 @@ def get_urls():
     return resp
 
 
-@application.route('/api/1/upload', methods=['POST'])
-def post_data():
+@application.route('/api/1/upload', methods=['GET', 'POST'])
+def upload_data():
     if not os.path.exists(get_workdir()):
         msg = "Erro: directory {} does not exist on server".format(get_workdir())
         logging.error(msg)
         return make_response(msg, 404)
 
     data_file = os.path.join(get_workdir(), DATA_UPLOAD_FILE)
+    logging.info("Writing data to {}".format(data_file))
     with open(data_file, 'a') as data:
-        for key, value in request.form.iteritems():
+        data.write("--- {timestamp} ---\n".format(timestamp=datetime.datetime.now().isoformat()))
+        for key, value in request.args.iteritems():
             data.write("{key}: {value}\n".format(key=key, value=value))
-    return 'ok'
+        data.write("----------------------\n")
+    return make_response('Data received and saved', 200)
+
 
 @application.errorhandler(ResponseError)
 def handle_invalid_usage(error):
