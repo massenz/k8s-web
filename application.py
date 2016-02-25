@@ -17,6 +17,7 @@ import argparse
 import datetime
 import logging
 import os
+import re
 import time
 import uuid
 
@@ -97,39 +98,45 @@ def build_fname(migration_id, ext):
         prefix=prefix, name=DEFAULT_NAME, ext=ext))
 
 
-def find_most_recent(ext):
-    """ Returns the most recent file matching the given extension, for the Migration ID
+def find_first_match(ext):
+    """ Returns the first file matching the given extension.
 
-    :param migration_id: the unique ID of the migration for the logs
     :param ext: the file extension
     :return: the most recent filename that matches the ID and extension
     :raises: FileNotFound if the file does not exist
     """
-    # TODO: for now there will only be one file, in future there may be many,
-    #     all named as in `{YYYYmmdd}_outliers.json`
-    full_name = 'outliers.{ext}'.format(ext=ext)
+    pattern = re.compile(r'\.{}$'.format(ext))
     files = [f for f in os.listdir(get_workdir()) if os.path.isfile(os.path.join(get_workdir(), f))]
-    files.sort(reverse=True)
     for fname in files:
-        # TODO: should match the pattern, beyond the simple extension matching
-        if fname == full_name:
+        if re.match(pattern=pattern, string=fname):
             return os.path.join(get_workdir(), fname)
     raise FileNotFound("Could not find data file for {}".format(full_name))
 
 
 def get_data(fname):
+    """ Reads the file and returns its contents.
+
+    :param fname: the name of the file to read.
+    :return: the contents of the file.
+    :raises FileNotFound: if the file does not exist.
+    """
     if not os.path.exists(fname):
-        raise FileNotFound("Could not find outliers data for {name}".format(name=fname))
-    with open(fname, 'r') as outliers:
-        return outliers.read()
+        raise FileNotFound("Could not find {name}".format(name=fname))
+    with open(fname, 'r') as data:
+        return data.read()
 
 
-#
-# Views
-#
 def get_db_uri():
-    return application.config['DB_URI']
+    """ The URI for the database, if configured.
 
+    :return:  the contents of the --db_uri flag, if available.
+    """
+    return application.config.get('DB_URI')
+
+
+#
+# Endpoints and Views
+#
 
 @application.route('/')
 def home():
@@ -168,43 +175,27 @@ def get_configs():
     return make_response(jsonify(configz))
 
 
-@application.route('/api/v1/outliers', methods=['GET', 'HEAD'])
-def download_data():
-    """ Retrieves the log files for a Migration
+@application.route('/data', methods=['GET', 'HEAD'])
+def download_data(ext):
+    """ Retrieves the contents of the first file whose extension matches
+        the query argument for ```ext```; e.g.::
 
-        If there are more than one set of log files with the given extension for the same ID,
-        it will return the most recent.
-
-    :param migration_id: the unique ID for the migration logs we want to retrieve
-    :type migration_id: ```uuid.UUID```
-    :return: a response that will direct the client to download the file (instead of displaying
-        it in the browser), by using the "Content-Disposition" header
+            /data?ext=json
     """
-    # TODO: use a query arg for the file name extension, or even the full name
-    file_type = request.args.get('type', 'json')
-    fname = find_most_recent(ext=file_type)
-    logging.info('Sending outliers data from {}'.format(fname))
+    file_type = request.args.get('ext', 'json')
+    fname = find_first_match(ext=file_type)
+    logging.info('Retrieving data for {}'.format(fname))
     response = make_response()
-    response.headers["Content-Type"] = "application/json"
+    # TODO: we should really use the correct MIMETYPE here.
+    response.headers["Content-Type"] = "application/{}".format(file_type)
     response.data = get_data(fname)
     return response
 
 
-@application.route('/api/1/config')
-def get_urls():
-    upload_dest = request.args.get('upload')
-    upload_url = ITUNES
-    if upload_dest == 'local':
-        upload_url = LOCAL.format(port=application.config['PORT'])
-    resp = make_response(render_template('config.json', upload_url=upload_url))
-    resp.headers['Content-Type'] = 'application/json'
-    return resp
-
-
-@application.route('/api/1/upload', methods=['GET', 'POST'])
+@application.route('/upload', methods=['GET', 'POST'])
 def upload_data():
     if not os.path.exists(get_workdir()):
-        msg = "Erro: directory {} does not exist on server".format(get_workdir())
+        msg = "Error: directory {} does not exist on server".format(get_workdir())
         logging.error(msg)
         return make_response(msg, 404)
 
@@ -212,9 +203,9 @@ def upload_data():
     logging.info("Writing data to {}".format(data_file))
     with open(data_file, 'a') as data:
         data.write("--- {timestamp} ---\n".format(timestamp=datetime.datetime.now().isoformat()))
-        for key, value in request.args.iteritems():
+        for key in request.args.keys():
+            value = request.args.get(key)
             data.write("{key}: {value}\n".format(key=key, value=value))
-        data.write("----------------------\n")
     return make_response('Data received and saved', 200)
 
 
