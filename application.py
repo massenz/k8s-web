@@ -218,6 +218,22 @@ def upload_data():
     return make_response('Data received and saved', 200)
 
 
+@application.route('/timeout/<seconds>')
+def timeout(seconds):
+    logging.warning("Sleeping for {} seconds".format(seconds))
+    time.sleep(float(seconds))
+    logging.warning("Sleep ends")
+    return make_response('ok', 200)
+
+
+@application.route('/statuscode/<code>')
+def statuscode(code):
+    logging.info("Returning code".format(code))
+    if code == "666":
+        raise RuntimeError("Failure!")
+    return make_response('Returning status: {}'.format(code), int(code))
+
+
 @application.errorhandler(ResponseError)
 def handle_invalid_usage(error):
     logging.error(error.message)
