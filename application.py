@@ -17,9 +17,13 @@ import argparse
 import datetime
 import logging
 import os
+<<<<<<< HEAD
 import re
 import time
 import uuid
+=======
+import time
+>>>>>>> Added slow query
 
 # Flask imports
 from flask import (
@@ -147,10 +151,24 @@ def home():
 def health():
     """ A simple health-chek endpoint (can be used as a heartbeat too).
 
-    :return: a 200 OK status (and the string "ok")
+    :return: a 200 OK status (and echo back the query args)
     """
-    return 'ok'
+    return make_response(jsonify({'status': 'ok', 'query_args': request.args}))
 
+
+@application.route('/slow')
+def slow_query():
+    sleep_time = request.args.get('q')
+    query = 'fast'
+    if sleep_time  is not None:
+        try:
+            sleep_time = int(sleep_time)
+        except:
+            sleep_time = 10
+        logging.debug("Blocking call on /slow query call for {} seconds".format(sleep_time))
+        time.sleep(sleep_time)
+        query = 'wait for {} sec'.format(sleep_time)
+    return make_response(jsonify({'q': query}))
 
 @application.route('/config')
 def get_configs():
