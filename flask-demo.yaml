@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+    name: flask-demo
+    labels:
+      app: web-server
+      rel: unstable
+
+spec:
+  containers:
+    - image: massenz/simple-flask
+      name: flask-demo
+      ports:
+        - containerPort: 5050
+          protocol: TCP

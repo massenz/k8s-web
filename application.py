@@ -35,14 +35,6 @@ from utils import choose, SaneBool
 FORMAT = '%(asctime)-15s [%(levelname)s] %(message)s'
 DATE_FMT = '%m/%d/%Y %H:%M:%S'
 
-# TODO: These have been moved to the YAML configuration
-DATA_UPLOAD_FILE = 'data_upload.log'
-ITUNES = "https://mzuserxp.itunes.apple.com/WebObjects/MZUserXP.woa/wa/recordStats"
-# TODO: replace the hard-coded hostname string with a dynamic discovery.
-LOCAL = "http://mmassenzio-pro.apple.com:{port}/api/1/upload"
-
-
-#: Flask App, must be global
 application = Flask(__name__)
 
 
@@ -51,7 +43,12 @@ MAX_RETRIES = 30
 RETRY_INTERVAL = 1
 DEFAULT_NAME = 'migration_logs'
 
-SENSITIVE_KEYS = ('SESSION_COOKIE_DOMAIN', 'SESSION_COOKIE_PATH', 'RUNNING_AS', 'SECRET_KEY')
+SENSITIVE_KEYS = (
+    'SESSION_COOKIE_DOMAIN',
+    'SESSION_COOKIE_PATH',
+    'RUNNING_AS',
+    'SECRET_KEY',
+)
 
 
 class ResponseError(Exception):
@@ -105,7 +102,7 @@ def find_first_match(ext):
     :return: the most recent filename that matches the ID and extension
     :raises: FileNotFound if the file does not exist
     """
-    pattern = re.compile(r'\.{}$'.format(ext))
+    pattern = re.compile(r'\.{ext}$'.format(ext=ext))
     files = [f for f in os.listdir(get_workdir()) if os.path.isfile(os.path.join(get_workdir(), f))]
     for fname in files:
         if re.match(pattern=pattern, string=fname):
@@ -125,22 +122,12 @@ def get_data(fname):
     with open(fname, 'r') as data:
         return data.read()
 
-
-def get_db_uri():
-    """ The URI for the database, if configured.
-
-    :return:  the contents of the --db_uri flag, if available.
-    """
-    return application.config.get('DB_URI')
-
-
-#
 # Endpoints and Views
-#
+
 
 @application.route('/')
 def home():
-    return render_template('index.html', workdir=get_workdir(), db_uri=get_db_uri())
+    return render_template('index.html', workdir=get_workdir())
 
 
 @application.route('/health')
@@ -149,28 +136,13 @@ def health():
 
     :return: a 200 OK status (and echo back the query args)
     """
-    return make_response(jsonify({'status': 'ok', 'query_args': request.args}))
+    return make_response(jsonify({'status': 'ok'}))
 
 
 @application.route('/demo')
 def demo():
-    print(">>>> ", request.args)
     return make_response(jsonify({'status': 'ok', 'query_args': request.args}))
 
-
-@application.route('/slow')
-def slow_query():
-    sleep_time = request.args.get('q')
-    query = 'fast'
-    if sleep_time  is not None:
-        try:
-            sleep_time = int(sleep_time)
-        except:
-            sleep_time = 10
-        logging.debug("Blocking call on /slow query call for {} seconds".format(sleep_time))
-        time.sleep(sleep_time)
-        query = 'wait for {} sec'.format(sleep_time)
-    return make_response(jsonify({'q': query}))
 
 @application.route('/config')
 def get_configs():
@@ -212,29 +184,19 @@ def download_data():
     return response
 
 
-@application.route('/upload', methods=['GET', 'POST'])
-def upload_data():
+@application.route('/data/<filename>', methods=['POST'])
+def upload_data(filename):
     if not os.path.exists(get_workdir()):
         msg = "Error: directory {} does not exist on server".format(get_workdir())
         logging.error(msg)
         return make_response(msg, 404)
 
-    data_file = os.path.join(get_workdir(), DATA_UPLOAD_FILE)
+    data_file = os.path.join(get_workdir(), filename)
     logging.info("Writing data to {}".format(data_file))
-    with open(data_file, 'a') as data:
+    with open(data_file, 'wt') as data:
         data.write("--- {timestamp} ---\n".format(timestamp=datetime.datetime.now().isoformat()))
-        for key in request.args.keys():
-            value = request.args.get(key)
-            data.write("{key}: {value}\n".format(key=key, value=value))
+        data.write(request.data)
     return make_response('Data received and saved', 200)
-
-
-@application.route('/timeout/<seconds>')
-def timeout(seconds):
-    logging.warning("Sleeping for {} seconds".format(seconds))
-    time.sleep(float(seconds))
-    logging.warning("Sleep ends")
-    return make_response('ok', 200)
 
 
 @application.route('/statuscode/<code>')
