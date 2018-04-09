@@ -9,4 +9,3 @@ python-dateutil
 simplejson
 six
 Werkzeug
-wheel

@@ -17,13 +17,8 @@ import argparse
 import datetime
 import logging
 import os
-<<<<<<< HEAD
 import re
 import time
-import uuid
-=======
-import time
->>>>>>> Added slow query
 
 # Flask imports
 from flask import (
@@ -31,7 +26,8 @@ from flask import (
     make_response,
     jsonify,
     render_template,
-    request)
+    request,
+)
 
 from utils import choose, SaneBool
 
@@ -114,7 +110,7 @@ def find_first_match(ext):
     for fname in files:
         if re.match(pattern=pattern, string=fname):
             return os.path.join(get_workdir(), fname)
-    raise FileNotFound("Could not find data file for {}".format(full_name))
+    raise FileNotFound("Could not find any file whose extension matches '{}'".format(ext))
 
 
 def get_data(fname):
@@ -156,6 +152,12 @@ def health():
     return make_response(jsonify({'status': 'ok', 'query_args': request.args}))
 
 
+@application.route('/demo')
+def demo():
+    print(">>>> ", request.args)
+    return make_response(jsonify({'status': 'ok', 'query_args': request.args}))
+
+
 @application.route('/slow')
 def slow_query():
     sleep_time = request.args.get('q')
@@ -194,7 +196,7 @@ def get_configs():
 
 
 @application.route('/data', methods=['GET', 'HEAD'])
-def download_data(ext):
+def download_data():
     """ Retrieves the contents of the first file whose extension matches
         the query argument for ```ext```; e.g.::
 
@@ -269,8 +271,8 @@ def prepare_env(config=None):
         # app_config['RUNNING_AS'] = choose('USER', '', config)
         verbose = SaneBool(choose('FLASK_DEBUG', False, config, 'verbose'))
 
-        # Loggin configuration
-        # TODO: move to a loogin.yaml configuration with proper handlers and loggers configuration
+        # Logging configuration
+        # TODO: move to a looging.yaml configuration with proper handlers and loggers configuration
         loglevel = logging.DEBUG if verbose else logging.INFO
         logging.basicConfig(format=FORMAT, datefmt=DATE_FMT, level=loglevel)
 
