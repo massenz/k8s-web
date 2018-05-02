@@ -1,0 +1,50 @@
+# ReplicaSet for Flask Demo
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: frontend-cluster
+  labels:
+    app: web-frontend
+    rel: unstable
+
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web-server
+
+  template:
+    metadata:
+      labels:
+        app: web-server
+        rel: unstable
+
+    spec:
+      containers:
+      - image: massenz/simple-flask:0.2.0
+        name: flask-demo
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        - name: https
+          containerPort: 443
+          protocol: TCP
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        env:
+        - name: SERVER_PORT
+          value: "80"
+        - name: SECURE_PORT
+          value: "443"
+        - name: WORKDIR
+          value: "/var/lib/flask"
+
+        livenessProbe:
+          httpGet:
+            path: "/health"
+            port: 80

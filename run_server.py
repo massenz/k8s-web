@@ -25,12 +25,20 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', help="The port for the server to listen on", type=int,
                         default=5050)
+
+    parser.add_argument('-s', '--secure-port', help="The TLS port for the server to listen on",
+                        type=int, default=5443)
+
     parser.add_argument('-v', '--verbose', action='store_true', help='Enables debug logging')
+
     parser.add_argument('--debug', action='store_true', help="Turns on debugging/testing mode and "
                                                              "disables authentication")
+
     parser.add_argument('--secret-key', help='Used by the flask server to encrypt secure cookies')
+
     parser.add_argument('--workdir', help="Where to store files, must be an absolute path",
                         default='/tmp')
+
     parser.add_argument('--db_uri', help='The URI to the MongoDB server')
     return parser.parse_args()
 
@@ -43,6 +51,8 @@ def run_server():
     """
     config = parse_args()
     prepare_env(config)
+
+    # TODO(marco): enable TLS
     application.run(host='0.0.0.0',
                     debug=config.debug,
                     port=config.port)

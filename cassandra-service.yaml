@@ -1,0 +1,10 @@
+# External Service for Cassandra
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: cassandra
+
+spec:
+  ports:
+  - port: 9042

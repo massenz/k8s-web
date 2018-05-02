@@ -150,7 +150,7 @@ def get_configs():
 
     :return: a JSON response with the currently configured application values
     """
-    configz = {'health': health()}
+    configz = {'health': 'UP'}
     is_debug = application.config.get('DEBUG')
     for key in application.config.keys():
         # In a non-debug session, sensitive config values are masked

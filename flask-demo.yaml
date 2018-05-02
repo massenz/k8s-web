@@ -8,8 +8,12 @@ metadata:
 
 spec:
   containers:
-    - image: massenz/simple-flask
+    - image: massenz/simple-flask:0.2.0
       name: flask-demo
       ports:
         - containerPort: 5050
           protocol: TCP
+      livenessProbe:
+        httpGet:
+          path: "/health"
+          port: 5050
