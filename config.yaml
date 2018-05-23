@@ -1,0 +1,13 @@
+# Configuration file for flask-demo
+#
+# Used as ConfigMap to run the server in k8s:
+#
+#   kc create configmap frontend-config --from-file=config.yaml
+
+config:
+    seed: 2345
+    clients: 5
+
+response:
+    max: 99
+    prefix: "flask-"

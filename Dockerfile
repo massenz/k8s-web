@@ -18,5 +18,9 @@ ADD utils ./utils
 ADD application.py run_server.py ./
 
 EXPOSE ${SERVER_PORT} ${SECURE_PORT}
-CMD python run_server.py ${VERBOSE} ${DEBUG} \
-    --workdir ${WORKDIR} -p ${SERVER_PORT} -s ${SECURE_PORT}
+
+ENTRYPOINT python run_server.py
+CMD ${VERBOSE} ${DEBUG} \
+    --workdir ${WORKDIR} \
+    -p ${SERVER_PORT} \
+    -s ${SECURE_PORT}

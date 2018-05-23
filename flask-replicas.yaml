@@ -21,8 +21,13 @@ spec:
         rel: unstable
 
     spec:
+      volumes:
+      - name: config
+        configMap:
+          name: frontend-config
+
       containers:
-      - image: massenz/simple-flask:0.2.0
+      - image: massenz/simple-flask:0.3.0
         name: flask-demo
         ports:
         - name: http
@@ -31,6 +36,12 @@ spec:
         - name: https
           containerPort: 443
           protocol: TCP
+
+        volumeMounts:
+        - name: config
+          mountPath: "/etc/flask"
+          readOnly: true
+
 
         resources:
           requests:

@@ -14,9 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import argparse
+import json
+import pathlib
+
+import yaml
+
 from application import prepare_env, application
 
 __author__ = 'marco'
+
+
+CONFIG_FILE = pathlib.Path("/etc/flask/config.yaml")
 
 
 def parse_args():
@@ -50,6 +58,14 @@ def run_server():
     :return:
     """
     config = parse_args()
+
+    if CONFIG_FILE.exists():
+        with open(CONFIG_FILE) as cfg:
+            app_cfg = yaml.load(cfg)
+            print("File Config:\n", json.dumps(app_cfg, indent=4))
+    else:
+        raise ValueError(f"No configuration file {CONFIG_FILE}")
+
     prepare_env(config)
 
     # TODO(marco): enable TLS

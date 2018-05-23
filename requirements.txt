@@ -8,4 +8,5 @@ pymongo
 python-dateutil
 simplejson
 six
+PyYaml
 Werkzeug
