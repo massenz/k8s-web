@@ -4,6 +4,7 @@ apiVersion: apps/v1
 kind: ReplicaSet
 metadata:
   name: frontend-cluster
+  namespace: apps
   labels:
     app: web-frontend
     rel: unstable
