@@ -1,0 +1,33 @@
+# A "stateful" Pod (but NOT a StatefulSet) which
+# uses a PVC to back its persistent data.
+#
+# Re-creating a Pod using this will preserve the
+# data that had been written by the previously
+# running Pod(s).
+
+apiVersion: v1
+kind: Pod
+metadata:
+    name: mongo
+    namespace: apps
+    labels:
+      app: db
+      rel: unstable
+
+spec:
+  containers:
+    - image: mongo
+      name: mongodb
+      ports:
+      - containerPort: 27017
+        protocol: TCP
+      volumeMounts:
+      - name: mongo-pvc
+        mountPath: /data/db
+
+  volumes:
+  - name: mongo-pvc
+    persistentVolumeClaim:
+      # Here the claimName MUST match the name in the PVC
+      # (see mongo-pvc.yaml)
+      claimName: mongodb-pvc

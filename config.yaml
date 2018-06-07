@@ -11,3 +11,9 @@ config:
 response:
     max: 99
     prefix: "flask-"
+
+db:
+  # Here the 'hostname' must match the Service `name`
+  # fronting the backend (see backend-service.yaml)
+  uri: "mongodb://backend:27017/my-db"
+  collection: "sampledata"
