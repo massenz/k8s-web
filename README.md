@@ -1,14 +1,14 @@
 # simple-flask
 
-__Version:__ `0.2.0`
+__Version:__ `0.3.1`
 
 Simple [Flask](https://flask.io) server to demonstrate K8s capabilities; run with `--help`
 to see the CLI options available.
 
 # Container
 
-This is build as a container (currently pushed to
-[`massenz/simple-flask:0.2.0`](https://hub .docker.com/r/massenz/kafka/)), with the following ENV
+This is built as a container (currently pushed to
+[`massenz/simple-flask`](https://hub.docker.com/r/massenz/simple-flask)), with the following ENV
 args:
 
     ENV VERBOSE=''
@@ -41,3 +41,9 @@ the K8s DNS will resolve the services (using the `Service`'s `name`):
     curl -v http://frontend/config | python -m json.tool
 
 the `cassandra` service will be reachable at the following URI: `tcp://cassandra:9042`.
+
+## ConfigMaps
+
+The `config.yaml` file is used as a [ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/) to run the server in k8s:
+
+  kubectl create configmap frontend-config --from-file=config.yaml

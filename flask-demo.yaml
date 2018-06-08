@@ -18,3 +18,8 @@ spec:
         httpGet:
           path: "/health"
           port: 5050
+
+      env:
+      - name: SERVER_PORT
+        value: "80"
+        
