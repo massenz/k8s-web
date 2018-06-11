@@ -4,13 +4,8 @@
 #
 #   kc create configmap frontend-config --from-file=config.yaml
 
-config:
-    seed: 2345
-    clients: 5
-
-response:
-    max: 99
-    prefix: "flask-"
+server:
+  workdir: /var/lib/flask
 
 db:
   # Here the 'hostname' must match the Service `name`

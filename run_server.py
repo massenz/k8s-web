@@ -37,17 +37,15 @@ def parse_args():
     parser.add_argument('-s', '--secure-port', help="The TLS port for the server to listen on",
                         type=int, default=5443)
 
-    parser.add_argument('-v', '--verbose', action='store_true', help='Enables debug logging')
-
     parser.add_argument('--debug', action='store_true', help="Turns on debugging/testing mode and "
                                                              "disables authentication")
 
     parser.add_argument('--secret-key', help='Used by the flask server to encrypt secure cookies')
 
-    parser.add_argument('--workdir', help="Where to store files, must be an absolute path",
-                        default='/tmp')
+    parser.add_argument('--config-file', default=CONFIG_FILE,
+                        help=f'Location of the YAML file with configuration values; by default, '
+                             f'{CONFIG_FILE}')
 
-    parser.add_argument('--db_uri', help='The URI to the MongoDB server')
     return parser.parse_args()
 
 
@@ -58,14 +56,6 @@ def run_server():
     :return:
     """
     config = parse_args()
-
-    if CONFIG_FILE.exists():
-        with open(CONFIG_FILE) as cfg:
-            app_cfg = yaml.load(cfg)
-            print("File Config:\n", json.dumps(app_cfg, indent=4))
-    else:
-        raise ValueError(f"No configuration file {CONFIG_FILE}")
-
     prepare_env(config)
 
     # TODO(marco): enable TLS

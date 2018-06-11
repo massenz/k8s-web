@@ -17,10 +17,13 @@ import argparse
 import datetime
 import logging
 import os
+import pathlib
 import re
 import time
 
 # Flask imports
+import pymongo
+import yaml
 from flask import (
     Flask,
     make_response,
@@ -167,36 +170,33 @@ def get_configs():
     return make_response(jsonify(configz))
 
 
-@application.route('/data', methods=['GET', 'HEAD'])
-def download_data():
-    """ Retrieves the contents of the first file whose extension matches
-        the query argument for ```ext```; e.g.::
+@application.route('/api/v1/entity/<id>')
+def get_entity(id):
+    """Tries to connect to the db and retrieve the entity show ID is `id`"""
+    # TODO: Move to a DAO class
+    client = pymongo.MongoClient(application.config['DB_URI'])
+    db = client.get_database()
+    coll = db.get_collection(application.config['DB_COLLECTION'])
+    cursor = coll.find({'_id': id})
+    result = []
+    for item in cursor:
+        result.append(item)
 
-            /data?ext=json
-    """
-    file_type = request.args.get('ext', 'json')
-    fname = find_first_match(ext=file_type)
-    logging.info('Retrieving data for {}'.format(fname))
-    response = make_response()
-    # TODO: we should really use the correct MIMETYPE here.
-    response.headers["Content-Type"] = "application/{}".format(file_type)
-    response.data = get_data(fname)
+    return make_response(jsonify(result))
+
+
+@application.route('/api/v1/entity', methods=['POST'])
+def create_entity():
+    """Tries to connect to the db and retrieve the entity show ID is `id`"""
+    # TODO: Move to a DAO class
+    client = pymongo.MongoClient(application.config['DB_URI'])
+    db = client.get_database()
+    coll = db.get_collection(application.config['DB_COLLECTION'])
+    res = coll.insert_one(request.json)
+    response = make_response(jsonify({"msg": "inserted"}))
+    response.status_code = 201
+    response.headers['Location'] = f'/api/v1/entity/{res.inserted_id}'
     return response
-
-
-@application.route('/data/<filename>', methods=['POST'])
-def upload_data(filename):
-    if not os.path.exists(get_workdir()):
-        msg = "Error: directory {} does not exist on server".format(get_workdir())
-        logging.error(msg)
-        return make_response(msg, 404)
-
-    data_file = os.path.join(get_workdir(), filename)
-    logging.info("Writing data to {}".format(data_file))
-    with open(data_file, 'wt') as data:
-        data.write("--- {timestamp} ---\n".format(timestamp=datetime.datetime.now().isoformat()))
-        data.write(request.data)
-    return make_response('Data received and saved', 200)
 
 
 @application.route('/statuscode/<code>')
@@ -217,36 +217,39 @@ def handle_invalid_usage(error):
 
 @application.before_first_request
 def config_app():
-    prepare_env()
+    pass
 
 
 def prepare_env(config=None):
     """ Initializes the application configuration
 
-    Must take into account that it may be started locally (via a command-line options) or
-    remotely via AWS Beanstalk (in which case only the OS Env variables will be available).
-
-    :param config: an optional L{Namespace} object, obtained from parsing the options
+    :param config: the L{Namespace} object, obtained from parsing the options
     :type config: argparse.Namespace or None
     """
-    if not application.config.get('INITIALIZED'):
-        # app_config['RUNNING_AS'] = choose('USER', '', config)
-        verbose = SaneBool(choose('FLASK_DEBUG', False, config, 'verbose'))
+    application.config['RUNNING_AS'] = os.getenv('USER', 'unknown')
+    debug = SaneBool(choose('FLASK_DEBUG', False, config, 'debug'))
+    application.config['DEBUG'] = debug
 
-        # Logging configuration
-        # TODO: move to a looging.yaml configuration with proper handlers and loggers configuration
-        loglevel = logging.DEBUG if verbose else logging.INFO
-        logging.basicConfig(format=FORMAT, datefmt=DATE_FMT, level=loglevel)
+    loglevel = logging.DEBUG if debug else logging.INFO
+    logging.basicConfig(format=FORMAT, datefmt=DATE_FMT, level=loglevel)
 
-        # Flask apparently does not store this internally.
-        application.config['PORT'] = config.port
+    # Flask apparently does not store this internally.
+    application.config['PORT'] = config.port
+    application.config['SECURE_PORT'] = config.secure_port
 
-        # Flask application configuration
-        application.config['DEBUG'] = SaneBool(choose('FLASK_DEBUG', False, config, 'debug'))
-        application.config['TESTING'] = choose('FLASK_TESTING', False)
-        application.config['SECRET_KEY'] = choose('FLASK_SECRET_KEY', 'd0n7useth15', config,
-                                                  'secret_key')
-        application.config['WORKDIR'] = choose('FLASK_WORKDIR', '/tmp', config, 'workdir')
+    # Flask application configuration
+    application.config['TESTING'] = choose('FLASK_TESTING', False)
+    application.config['SECRET_KEY'] = choose('FLASK_SECRET_KEY', 'd0n7useth15', config,
+                                              'secret_key')
+    application.config['WORKDIR'] = choose('FLASK_WORKDIR', '/tmp', config, 'workdir')
 
-        application.config['INITIALIZED'] = True
-        application.config['DB_URI'] = choose('DB_URI', '', config, 'db_uri')
+    if not config.config_file:
+        raise ValueError("A configuration file MUST be provided, use --config-file")
+    config_file = pathlib.Path(config.config_file)
+    if not config_file.exists():
+        raise FileNotFound(f"Configuration file {config_file} does not exist")
+
+    with open(config_file, 'r') as cfg:
+        configs = yaml.load(cfg)
+        application.config['DB_URI'] = configs['db']['uri']
+        application.config['DB_COLLECTION'] = configs['db']['collection']

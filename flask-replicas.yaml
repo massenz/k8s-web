@@ -32,10 +32,10 @@ spec:
         name: flask-demo
         ports:
         - name: http
-          containerPort: 80
+          containerPort: 8080
           protocol: TCP
         - name: https
-          containerPort: 443
+          containerPort: 8443
           protocol: TCP
 
         volumeMounts:
@@ -50,13 +50,11 @@ spec:
             memory: 100Mi
         env:
         - name: SERVER_PORT
-          value: "80"
+          value: "8080"
         - name: SECURE_PORT
-          value: "443"
-        - name: WORKDIR
-          value: "/var/lib/flask"
+          value: "8443"
 
         livenessProbe:
           httpGet:
             path: "/health"
-            port: 80
+            port: 8080
