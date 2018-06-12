@@ -42,8 +42,53 @@ the K8s DNS will resolve the services (using the `Service`'s `name`):
 
 the `cassandra` service will be reachable at the following URI: `tcp://cassandra:9042`.
 
+
 ## ConfigMaps
 
 The `config.yaml` file is used as a [ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/) to run the server in k8s:
 
   kubectl create configmap frontend-config --from-file=config.yaml
+
+
+# 2-tier Service in Kubernetes
+
+Creates a two tier (frontend / backend) service, with the backend running a stateful MongoDB and the Web frontend is ran as a Flask application:
+
+```
+  # Create & Push Docker image for Web app
+  docker build -t massenz/simple-flask:0.3.1 .
+  docker push massenz/simple-flask:0.3.1
+
+  # Create the Volume claim, and start the DB Pod
+  # (which will mount the volume)
+  kc apply -f mongo-pvc.yaml
+  kc apply -f mongo-pod.yaml
+  kc apply -f backend-service.yaml
+
+  # Create the configuration (mounted as as volume) then start
+  # and deploy the frontend service.
+  kc create configmap frontend-config -n apps --from-file=config.yaml
+  kc apply -f flask-replicas.yaml
+  kc apply -f frontend-service.yaml
+
+  # Verify that the Pods are running
+  kc get po -n apps
+
+  # Check out the details on one of them (change the
+  # name to the actual pod name)
+  kc describe pod frontend-cluster-cpgms -n apps
+```
+
+and then to verify:
+
+```
+  kc exec -it frontend-cluster-cpgms -n apps /bin/bash
+
+    curl http://localhost:8080/config
+
+    curl -X POST -d '{"_id": "100", "name": "Rebo", "job": "Cisco"}' \
+          -H "Content-type: application/json" \
+          http://localhost:8080/api/v1/entity
+
+    curl http://localhost:8080/api/v1/entity/100
+```
