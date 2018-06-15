@@ -28,7 +28,7 @@ spec:
           name: frontend-config
 
       containers:
-      - image: massenz/simple-flask:0.3.1
+      - image: docker.apple.com/amp-sre/simple-flask:0.3.1
         name: flask-demo
         ports:
         - name: http

@@ -22,23 +22,23 @@ args:
 
 First create the internal service (Load Balances the `ReplicaSet` started below):
 
-  kubectl create -f frontend-service.yaml
+    kubectl create -f frontend-service.yaml
 
 and an external service (via `Endpoints`):
 
-  kubectl create -f cassandra-endpoints.yaml
-  kubectl create -f cassandra-service.yaml
+      kubectl create -f cassandra-endpoints.yaml
+      kubectl create -f cassandra-service.yaml
 
 Now deploy the "cluster":
 
-  kubectl create -f flask-replicas.yaml
-  kubectl get pods
+      kubectl create -f flask-replicas.yaml
+      kubectl get pods
 
 Inside the PODs, several `Env` variables will point to various services; however,
 the K8s DNS will resolve the services (using the `Service`'s `name`):
 
-  kubectl exec frontend-cluster-9wqll -- \
-    curl -v http://frontend/config | python -m json.tool
+      kubectl exec frontend-cluster-9wqll -- \
+        curl -v http://frontend/config | python -m json.tool
 
 the `cassandra` service will be reachable at the following URI: `tcp://cassandra:9042`.
 
@@ -55,22 +55,29 @@ The `config.yaml` file is used as a [ConfigMap](https://kubernetes.io/docs/tasks
 Creates a two tier (frontend / backend) service, with the backend running a stateful MongoDB and the Web frontend is ran as a Flask application:
 
 ```
+  # Authenticate to Registry first
+  docker login docker.apple.com
+  
   # Create & Push Docker image for Web app
-  docker build -t massenz/simple-flask:0.3.1 .
-  docker push massenz/simple-flask:0.3.1
+  docker build -t docker.apple.com/amp-sre/simple-flask:0.3.1 .
+  docker push docker.apple.com/amp-sre/simple-flask:0.3.1
+```
 
+```
   # Create the Volume claim, and start the DB Pod
   # (which will mount the volume)
   kc apply -f mongo-pvc.yaml
   kc apply -f mongo-pod.yaml
   kc apply -f backend-service.yaml
-
+```
+```
   # Create the configuration (mounted as as volume) then start
   # and deploy the frontend service.
   kc create configmap frontend-config -n apps --from-file=config.yaml
   kc apply -f flask-replicas.yaml
   kc apply -f frontend-service.yaml
-
+```
+```
   # Verify that the Pods are running
   kc get po -n apps
 
