@@ -9,11 +9,24 @@ to see the CLI options available.
 
 This uses ['pipenv'](https://docs.pipenv.org) to build a local virtualenv and run the application, see the docs for how to install it (essentially, `brew install pipenv`) then:
 
-  $ pipenv install
-  $ pipenv run ./run_server.py [options]
+    $ pipenv install
+    $ pipenv run ./run_server.py [options]
 
 the `install` command is necessary only once, or if you modify the `Pipenv` file to add dependencies.
 
+
+# AppleConnect integration
+
+This project uses the [AppleConnect integration library](https://github.pie.apple.com/python-frameworks/flask-appleconnect) to authenticate users.
+
+- to enable the UAT environment in Apple Directory and create an OD Group, see [here](https://connectme.apple.com/docs/DOC-1436323)
+
+- you need to register your app to get an `Application ID`, [see here](https://idms.apple.com/IdmsServiceApp/#/createapp)
+
+- to get an `Application Key` see [here](https://connectme.apple.com/docs/DOC-1138451)
+
+
+`TODO: add notes here`
 
 # Container
 

@@ -13,9 +13,9 @@ ADD Pipfile Pipfile.lock ./
 RUN pip install -U pip pipenv
 RUN pipenv install
 
-ADD templates ./templates/
-ADD utils ./utils
-ADD application.py run_server.py ./
+ADD ../templates ./templates/
+ADD ../utils ./utils
+ADD ../application.py run_server.py ./
 
 EXPOSE ${SERVER_PORT} ${SECURE_PORT}
 

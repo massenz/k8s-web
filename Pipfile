@@ -3,7 +3,13 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
+[[source]]
+url = "https://pypi.apple.com/simple"
+verify_ssl = true
+name = "apple"
+
 [packages]
+Flask-AppleConnect = {version="*", index="apple"}
 Flask = "*"
 itsdangerous = "*"
 "Jinja2" = "*"
