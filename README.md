@@ -1,9 +1,19 @@
 # simple-flask
 
-__Version:__ `0.3.1`
+__Version:__ `0.4.0`
 
 Simple [Flask](https://flask.io) server to demonstrate K8s capabilities; run with `--help`
 to see the CLI options available.
+
+# Run locally
+
+This uses ['pipenv'](https://docs.pipenv.org) to build a local virtualenv and run the application, see the docs for how to install it (essentially, `brew install pipenv`) then:
+
+  $ pipenv install
+  $ pipenv run ./run_server.py [options]
+
+the `install` command is necessary only once, or if you modify the `Pipenv` file to add dependencies.
+
 
 # Container
 
@@ -57,7 +67,7 @@ Creates a two tier (frontend / backend) service, with the backend running a stat
 ```
   # Authenticate to Registry first
   docker login docker.apple.com
-  
+
   # Create & Push Docker image for Web app
   docker build -t docker.apple.com/amp-sre/simple-flask:0.3.1 .
   docker push docker.apple.com/amp-sre/simple-flask:0.3.1

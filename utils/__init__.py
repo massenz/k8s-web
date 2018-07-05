@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright AlertAvert.com (c) 2013. All rights reserved.
+# Copyright AlertAvert.com (c) 2013-2018. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 # limitations under the License.
 import os
 
-__author__ = 'marco'
+__author__ = 'M. Massenzio (marco@alertavert.com'
 
 
 class SaneBool(object):

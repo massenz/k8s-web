@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright AlertAvert.com (c) 2013. All rights reserved.
+# Copyright AlertAvert.com (c) 2013-2018. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,15 +21,14 @@ import yaml
 
 from application import prepare_env, application
 
-__author__ = 'marco'
+__author__ = 'M. Massenzio (marco@alertavert.com'
 
 
 CONFIG_FILE = pathlib.Path("/etc/flask/config.yaml")
 
 
 def parse_args():
-    """ Parse command line arguments and returns a configuration object
-    """
+    """ Parse command line arguments and returns a configuration object """
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', help="The port for the server to listen on", type=int,
                         default=5050)

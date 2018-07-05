@@ -9,9 +9,9 @@ ENV DEBUG='' SERVER_PORT=8080 SECURE_PORT=8443 SECRET='chang3Me'
 
 WORKDIR /opt/simple
 
-ADD requirements.txt ./
-RUN pip install -U pip
-RUN pip install -r requirements.txt
+ADD Pipfile Pipfile.lock ./
+RUN pip install -U pip pipenv
+RUN pipenv install
 
 ADD templates ./templates/
 ADD utils ./utils
@@ -22,5 +22,5 @@ EXPOSE ${SERVER_PORT} ${SECURE_PORT}
 # "Exec" form of ENTRYPOINT, so we can substitute env values.
 # DO NOT use CMD as it will be ignored; also CLI invocations will
 # ignore any arguments passed following the container image.
-ENTRYPOINT python run_server.py ${DEBUG} -p ${SERVER_PORT} \
+ENTRYPOINT pipenv run ./run_server.py ${DEBUG} -p ${SERVER_PORT} \
     -s ${SECURE_PORT} --secret-key ${SECRET}

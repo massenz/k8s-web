@@ -34,6 +34,9 @@ from flask import (
 
 from utils import choose, SaneBool
 
+__author__ = 'M. Massenzio (marco@alertavert.com'
+
+
 # TODO: move all logging configuration into its own logging.conf file
 FORMAT = '%(asctime)-15s [%(levelname)s] %(message)s'
 DATE_FMT = '%m/%d/%Y %H:%M:%S'

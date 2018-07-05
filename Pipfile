@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+Flask = "*"
+itsdangerous = "*"
+"Jinja2" = "*"
+MarkupSafe = "*"
+pymongo = "*"
+python-dateutil = "*"
+PyYAML = "*"
+simplejson = "*"
+six = "*"
+Werkzeug = "*"
+
+[dev-packages]
+nose = "*"
+
+[requires]
+python_version = "3.6"
