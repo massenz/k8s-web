@@ -1,21 +1,12 @@
 #!/usr/bin/env python
-#
-# Copyright AlertAvert.com (c) 2013-2018. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+
 import os
+import pathlib
+import re
 
 __author__ = 'M. Massenzio (marco@alertavert.com'
+
+VERSION_PATTERN = re.compile('^\s*version\s*=\s*(?P<version>[0-9.]+)$')
 
 
 class SaneBool(object):
@@ -113,3 +104,20 @@ def choose(key, default, config=None, config_attr=None):
         config_value = getattr(config, config_attr)
     os_env_value = os.getenv(key)
     return config_value or os_env_value or default
+
+
+def version():
+    """ Returns the Project's Version"""
+    basedir = os.getenv("BASEDIR", '.')
+    settings = pathlib.Path(basedir) / "build.settings"
+    if not settings.exists():
+        ex = FileNotFoundError()
+        ex.filename = str(settings.absolute())
+        ex.errno = 'ENOENT'
+        ex.strerror = "Build settings file missing (no version information available)"
+        raise ex
+    with settings.open() as build_settings:
+        for line in build_settings.readlines():
+            m = re.match(VERSION_PATTERN, line)
+            if m:
+                return m.group('version')

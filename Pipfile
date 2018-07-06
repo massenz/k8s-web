@@ -11,8 +11,9 @@ name = "apple"
 [packages]
 Flask-AppleConnect = {version="*", index="apple"}
 Flask = "*"
+imetrics = {version="*", index="apple"}
 itsdangerous = "*"
-"Jinja2" = "*"
+Jinja2 = "*"
 MarkupSafe = "*"
 pymongo = "*"
 python-dateutil = "*"

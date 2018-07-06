@@ -4,7 +4,7 @@ FROM python:3.6
 MAINTAINER Marco Massenzio (marco@alertavert.com)
 
 # Override any of these options using --env to enable verbose logging, etc.
-# TODO: figure out how to pass the Secret via k8s
+# TODO: Use K8s Secrets
 ENV DEBUG='' SERVER_PORT=8080 SECURE_PORT=8443 SECRET='chang3Me'
 
 WORKDIR /opt/simple
@@ -13,9 +13,9 @@ ADD Pipfile Pipfile.lock ./
 RUN pip install -U pip pipenv
 RUN pipenv install
 
-ADD ../templates ./templates/
-ADD ../utils ./utils
-ADD ../application.py run_server.py ./
+ADD templates ./templates/
+ADD utils ./utils
+ADD application.py run_server.py ./
 
 EXPOSE ${SERVER_PORT} ${SECURE_PORT}
 

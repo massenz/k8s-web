@@ -28,7 +28,8 @@ spec:
           name: frontend-config
 
       containers:
-      - image: docker.apple.com/amp-sre/simple-flask:0.3.1
+      # TODO: We should automate the version tag; using, e.g., Jinja2, or just transforming the YAML
+      - image: docker.apple.com/amp-sre/simple-flask:0.4.0
         name: flask-demo
         ports:
         - name: http

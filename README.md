@@ -26,7 +26,20 @@ This project uses the [AppleConnect integration library](https://github.pie.appl
 - to get an `Application Key` see [here](https://connectme.apple.com/docs/DOC-1138451)
 
 
-`TODO: add notes here`
+`TODO: is there any way to make the "Return URL" dynamically configurable?`
+
+> Currently, setting up the "service" requires submitting a form with a 3-day delay, so we don't 
+know if the tentative implementation in `ac.py` really works (UAT).
+
+### Apple Directory groups
+
+Created the following groups to manage AppleConnect APIs and Hubble integration:
+
+    - pegasus-api-admin     Admin group for all other groups
+    - pegasus-api           For AppleConnect integration
+    - pegasus-api-dev       Developers group
+    - pegasus-api-sre       SRE group
+    
 
 # Container
 

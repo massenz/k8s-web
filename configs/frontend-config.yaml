@@ -2,7 +2,7 @@
 #
 # Used as ConfigMap to run the server in k8s:
 #
-#   kc create configmap frontend-config --from-file=config.yaml
+#   kc create configmap frontend-config --from-file=frontend-config.yaml
 
 server:
   workdir: /var/lib/flask
