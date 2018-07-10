@@ -51,7 +51,20 @@ def envs():
     return make_response(jsonify({"name": "foo", "vale": "bar"}))
 
 
+@app.route('/callback', methods=['GET'])
+def oauth_callback():
+    print("Query:", request.args)
+    print("Headers:", request.headers)
+
+    return make_response(jsonify({"status": "ok"}))
 
 
+@app.route('/welcome', methods=['GET'])
+def welcome():
+    print("Query:", request.args)
+    print("Headers:", request.headers)
 
-app.run()
+    return "Welcome!"
+
+
+app.run(port=8080, host="0.0.0.0", debug=True)

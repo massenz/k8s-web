@@ -11,6 +11,7 @@ name = "apple"
 [packages]
 Flask-AppleConnect = {version="*", index="apple"}
 Flask = "*"
+flask-login = "*"
 imetrics = {version="*", index="apple"}
 itsdangerous = "*"
 Jinja2 = "*"
@@ -18,12 +19,14 @@ MarkupSafe = "*"
 pymongo = "*"
 python-dateutil = "*"
 PyYAML = "*"
+requests_oauthlib = "*"
 simplejson = "*"
 six = "*"
 Werkzeug = "*"
 
 [dev-packages]
 nose = "*"
+ipython = "*"
 
 [requires]
 python_version = "3.6"
