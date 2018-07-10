@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+__author__ = 'M. Massenzio (mmassenzio@apple.com'
+
 import os
 
 from flask_appleconnect import FlaskAppleConnect

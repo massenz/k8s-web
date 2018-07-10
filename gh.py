@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+__author__ = 'M. Massenzio (mmassenzio@apple.com'
+
 import json
 
 from flask import Flask, request, jsonify, make_response, logging, redirect, url_for

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+__author__ = 'M. Massenzio (mmassenzio@apple.com'
+
 # Standard imports
 import argparse
 import datetime
@@ -19,7 +21,6 @@ import logging
 import os
 import pathlib
 import re
-import time
 
 # Flask imports
 import pymongo
@@ -33,9 +34,6 @@ from flask import (
 )
 
 from utils import choose, SaneBool
-
-__author__ = 'M. Massenzio (marco@alertavert.com'
-
 
 # TODO: move all logging configuration into its own logging.conf file
 FORMAT = '%(asctime)-15s [%(levelname)s] %(message)s'

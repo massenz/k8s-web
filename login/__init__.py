@@ -2,6 +2,8 @@
 # Created M. Massenzio (mmassenzio@apple.com), 7/9/18
 from flask_login import UserMixin
 
+__author__ = 'M. Massenzio (mmassenzio@apple.com'
+
 
 class User(UserMixin):
     def __init__(self, user_id, name):
