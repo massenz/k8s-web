@@ -29,23 +29,5 @@ the "customized" image adds `curl` to the `dnsutils` container:
 
 # Deploy service
 
-Follow README in `simple-flask`: [2-tier Service in Kubernetes](#2-tier-service-in-kubernetes).
+Follow README in `simple-flask`: [2-tier Service in Kubernetes](README.md/#2-tier-service-in-kubernetes).
 
-
-# Failure:
-
-$ kubectl describe pvc mongodb-pvc
-Name:          mongodb-pvc
-Namespace:     amp
-StorageClass:
-Status:        Pending
-Volume:
-Labels:        <none>
-Annotations:   kubectl.kubernetes.io/last-applied-configuration={"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"name":"mongodb-pvc","namespace":"amp"},"spec":{"accessModes":["ReadWrit...
-Finalizers:    [kubernetes.io/pvc-protection]
-Capacity:
-Access Modes:
-Events:
-  Type    Reason         Age               From                         Message
-  ----    ------         ----              ----                         -------
-  Normal  FailedBinding  5s (x21 over 4m)  persistentvolume-controller  no persistent volumes available for this claim and no storage class is set
