@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: test-cluster
+  namespace: amp
 
 spec:
   selector:
@@ -10,3 +11,106 @@ spec:
   ports:
     - port: 9042
       targetPort: 9042
+
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: cassandra
+  namespace: amp
+
+spec:
+  serviceName: cassandra
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: cassandra
+    spec:
+      containers:
+      - name: cx-node
+        image: cassandra:3.10
+        ports:
+        - name: cx
+          containerPort: 9042
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/cassandra
+        env:
+        - name: CASSANDRA_CLUSTER_NAME
+          value: dev_cluster
+        - name: CASSANDRA_SEEDS
+          value: cassandra-0.cassandra
+
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      resources:
+        requests:
+          storage: 100Mi
+      accessModes:
+      - ReadWriteOnce
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cassandra
+  namespace: amp
+
+spec:
+  clusterIP: None
+  selector:
+    app: cassandra
+
+  ports:
+    - name: cx
+      port: 9042
+
+---
+apiVersion: v1
+kind: List
+
+items:
+- apiVersion: v1
+  kind: PersistentVolume
+  metadata:
+    name: cx-nfs-0
+    namespace: amp
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    capacity:
+      storage: 100Mi
+    nfs:
+      path: /data/cassandra-0
+      server: ms11a00is-ingk10013201.isg.apple.com
+
+- apiVersion: v1
+  kind: PersistentVolume
+  metadata:
+    name: cx-nfs-1
+    namespace: amp
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    capacity:
+      storage: 100Mi
+    nfs:
+      path: /data/cassandra-1
+      server: ms11a00is-ingk10013201.isg.apple.com
+
+- apiVersion: v1
+  kind: PersistentVolume
+  metadata:
+    name: cx-nfs-2
+    namespace: amp
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    capacity:
+      storage: 100Mi
+    nfs:
+      path: /data/cassandra-2
+      server: ms11a00is-ingk10013201.isg.apple.com

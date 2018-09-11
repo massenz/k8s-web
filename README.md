@@ -140,17 +140,15 @@ and then to verify:
 
 See files in the [`configs/stateful`](configs/stateful) folder.
 
+    $ kubectl apply -f configs/stateful/test-cluster.yaml
+
 The `cx-svc` service is headless, so it can't be used to connect to the Pods (this is by design; 
 each pod is an individual node, and they are not -necessarily- supposed to be load-balanced); to
 test use instead the `cqlsh` deployed in each node:
 
     $ kubectl exec -ti cassandra-0 cqlsh
 
-Once we deploy a regular Service:
-
-    $ kubectl apply -f configs/stateless/test-cluster.yaml
-    
-we can run a "client" Pod and use it to connect to our Cassandra test cluster:
+or we can run a "client" Pod and use it to connect to our Cassandra test cluster:
 
     kc run cqlsh --image=cassandra:3.10 \
         --generator=run-pod/v1 --command -- sleep infinity
@@ -158,6 +156,7 @@ we can run a "client" Pod and use it to connect to our Cassandra test cluster:
 and then run CQL commands from its shell, connecting to the service:
 
     $ kubect exec -ti cqlsh -- cqlsh test-cluster
+   
     Connected to dev_cluster at test-cluster:9042.
     [cqlsh 5.0.1 | Cassandra 3.10 | CQL spec 3.4.4 | Native protocol v4]
     Use HELP for help.
