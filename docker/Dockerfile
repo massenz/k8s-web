@@ -1,9 +1,8 @@
 # Created by M. Massenzio (c) 2018
 
 FROM python:3.6
-MAINTAINER Marco Massenzio (marco@alertavert.com)
+MAINTAINER Marco Massenzio (mmassenzio@apple.com)
 
-# Override any of these options using --env to enable verbose logging, etc.
 # TODO: Use K8s Secrets
 ENV DEBUG='' SERVER_PORT=8080 SECURE_PORT=8443 SECRET='chang3Me'
 

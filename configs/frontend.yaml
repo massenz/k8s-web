@@ -1,26 +1,24 @@
-# ReplicaSet for Flask Demo
+# Web Server Deployment
 
 apiVersion: apps/v1
-kind: ReplicaSet
+kind: Deployment
 metadata:
   name: frontend-cluster
-  namespace: apps
+  namespace: amp
   labels:
     app: web-frontend
     rel: staging
 
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
-      app: web-server
+      app: webapp
 
   template:
     metadata:
       labels:
-        app: web-server
-        rel: staging
-
+        app: webapp
     spec:
       volumes:
       - name: config
@@ -28,15 +26,11 @@ spec:
           name: frontend-config
 
       containers:
-      # TODO: We should automate the version tag; using, e.g., Jinja2, or just transforming the YAML
       - image: docker.apple.com/amp-sre/simple-flask:0.4.0
-        name: flask-demo
+        name: webapp
         ports:
         - name: http
           containerPort: 8080
-          protocol: TCP
-        - name: https
-          containerPort: 8443
           protocol: TCP
 
         volumeMounts:
@@ -44,18 +38,52 @@ spec:
           mountPath: "/etc/flask"
           readOnly: true
 
-
         resources:
           requests:
             cpu: 100m
             memory: 100Mi
+
         env:
         - name: SERVER_PORT
           value: "8080"
-        - name: SECURE_PORT
-          value: "8443"
 
         livenessProbe:
           httpGet:
             path: "/health"
             port: 8080
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: amp
+
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+  selector:
+    app: webapp
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+
+data:
+  config.yaml: |
+    # Used as ConfigMap to run the server in k8s:
+    #
+    #   kc create configmap frontend-config --from-file=frontend-config.yaml
+
+    server:
+      workdir: /var/lib/flask
+
+    db:
+      # Here the 'hostname' must match the Service `name`
+      # fronting the backend (see backend-service.yaml)
+      uri: "mongodb://backend:27017/my-db"
+      collection: "sampledata"
