@@ -1,0 +1,8 @@
+name: "echo"
+version: "0.1.0"
+usage: "Echo the flags"
+description: |-
+  Simple echo plugin for Helm.
+ignoreFlags: false
+useTunnel: false
+command: "$HELM_PLUGIN_DIR/echo.sh ${USER} ${ECHO}"
