@@ -27,3 +27,4 @@ src/sentinel.egg-info/
 # Virtualenv location -not the best of names
 bin/
 
+*.tgz
