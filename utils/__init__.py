@@ -4,7 +4,6 @@ import os
 import pathlib
 import re
 
-__author__ = 'M. Massenzio (mmassenzio@apple.com'
 
 VERSION_PATTERN = re.compile('^\s*version\s*=\s*(?P<version>[0-9.]+)$')
 

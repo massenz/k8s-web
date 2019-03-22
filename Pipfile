@@ -3,16 +3,9 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
-[[source]]
-url = "https://pypi.apple.com/simple"
-verify_ssl = true
-name = "apple"
-
 [packages]
-Flask-AppleConnect = {version="*", index="apple"}
 Flask = "*"
 flask-login = "*"
-imetrics = {version="*", index="apple"}
 itsdangerous = "*"
 Jinja2 = "*"
 MarkupSafe = "*"
@@ -25,8 +18,12 @@ six = "*"
 Werkzeug = "*"
 
 [dev-packages]
+black = "*"
 nose = "*"
 ipython = "*"
 
 [requires]
-python_version = "3.6"
+python_version = "3"
+
+[pipenv]
+allow_prereleases = true

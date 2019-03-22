@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-__author__ = 'M. Massenzio (mmassenzio@apple.com'
 
 import argparse
 import pathlib
 
-from application import prepare_env, application
+from application import prepare_env, application, ResponseError
 
 CONFIG_FILE = pathlib.Path("/etc/flask/config.yaml")
 
@@ -21,6 +20,11 @@ def parse_args():
 
     parser.add_argument('--debug', action='store_true', help="Turns on debugging/testing mode and "
                                                              "disables authentication")
+
+    parser.add_argument('--accept-external', action='store_const', const='0.0.0.0',
+                        help="By default the server will only accept incoming connections from "
+                             "`localhost`; if this flag is set, it will accept incoming "
+                             "connections from all available NICs")
 
     parser.add_argument('--secret-key', help='Used by the flask server to encrypt secure cookies')
 
@@ -41,10 +45,17 @@ def run_server():
     prepare_env(config)
 
     # TODO(marco): enable TLS
-    application.run(host='0.0.0.0',
+    application.run(host=config.accept_external,
                     debug=config.debug,
                     port=config.port)
 
 
 if __name__ == '__main__':
-    run_server()
+    try:
+        run_server()
+    except KeyboardInterrupt:
+        print("Terminated by user")
+    except ResponseError as error:
+        print(f"[ERROR] Response error: {error.message}")
+    except Exception as ex:
+        print(f"[ERROR] Unexpected error: {ex}")

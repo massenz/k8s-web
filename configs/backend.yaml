@@ -1,3 +1,43 @@
+# A DB service, backed by a MongoDB Pod
+# Using a "stateful" service (with a Persistent Volume)
+#
+# Reachable at URL: mongodb://backend:27017/db_name
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+
+spec:
+  ports:
+  - name: http
+    port: 27017
+    targetPort: 27017
+
+  selector:
+    app: db
+
+
+---
+# Persistent Volume claim backed by the
+# default storage class, created dynamically.
+#
+# Using this does not require
+# creating a Persistent Volume first.
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-pvc
+
+spec:
+  resources:
+    requests:
+      storage: 100Mi
+  accessModes:
+  - ReadWriteOnce
+
+---
 # A "stateful" Pod (but NOT a StatefulSet) which
 # uses a PVC to back its persistent data.
 #
@@ -9,7 +49,6 @@ apiVersion: v1
 kind: Pod
 metadata:
     name: mongo
-    namespace: amp
     labels:
       app: db
       rel: "mongo-3.7"
@@ -29,5 +68,4 @@ spec:
   - name: mongo-pvc
     persistentVolumeClaim:
       # Here the claimName MUST match the name in the PVC
-      # (see mongo-pvc.yaml)
       claimName: mongodb-pvc

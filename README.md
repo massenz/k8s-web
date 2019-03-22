@@ -15,130 +15,141 @@ This uses ['pipenv'](https://docs.pipenv.org) to build a local virtualenv and ru
 the `install` command is necessary only once, or if you modify the `Pipenv` file to add dependencies.
 
 
-# AppleConnect integration
-
-This project uses the [AppleConnect integration library](https://github.pie.apple.com/python-frameworks/flask-appleconnect) to authenticate users.
-
-- to enable the UAT environment in Apple Directory and create an OD Group, see [here](https://connectme.apple.com/docs/DOC-1436323)
-
-- you need to register your app to get an `Application ID`, [see here](https://idms.apple.com/IdmsServiceApp/#/createapp)
-
-- to get an `Application Key` see [here](https://connectme.apple.com/docs/DOC-1138451)
-
-
-`TODO: is there any way to make the "Return URL" dynamically configurable?`
-
-> Currently, setting up the "service" requires submitting a form with a 3-day delay, so we don't 
-know if the tentative implementation in `ac.py` really works (UAT).
-
-### Apple Directory groups
-
-Created the following groups to manage AppleConnect APIs and Hubble integration:
-
-    - pegasus-api-admin     Admin group for all other groups
-    - pegasus-api           For AppleConnect integration
-    - pegasus-api-dev       Developers group
-    - pegasus-api-sre       SRE group
-    
-
 # Container
 
-This is built as a container (currently pushed to
-[`massenz/simple-flask`](https://hub.docker.com/r/massenz/simple-flask)), with the following ENV
-args:
+This is built as a container:
+ 
+    docker login
+    docker build -t massenz/simple-flask:0.5.0 -f docker/Dockerfile .
+    docker push massenz/simple-flask:0.5.0
 
-    ENV VERBOSE=''
-        DEBUG=''
-        WORKDIR=/opt/simple/data
-        SERVER_PORT=8080
-        SECURE_PORT=8443
+expecting the following `ENV` args:
 
+    ENV DEBUG='' 
+        SERVER_PORT=8080 
+        SECURE_PORT=8443 
+        SECRET='chang3Me'
 
-# Kubernetes
-
-First create the internal service (Load Balances the `ReplicaSet` started below):
-
-    kubectl create -f frontend-service.yaml
-
-and an external service (via `Endpoints`):
-
-      kubectl create -f cassandra-endpoints.yaml
-      kubectl create -f cassandra-service.yaml
-
-Now deploy the "cluster":
-
-      kubectl create -f flask-replicas.yaml
-      kubectl get pods
-
-Inside the PODs, several `Env` variables will point to various services; however,
-the K8s DNS will resolve the services (using the `Service`'s `name`):
-
-      kubectl exec frontend-cluster-9wqll -- \
-        curl -v http://frontend/config | python -m json.tool
-
-the `cassandra` service will be reachable at the following URI: `tcp://cassandra:9042`.
+These can be re-defined either using `--env` with `docker run` or via the usual Kubernets method 
+to inject `env` arguments in the template.
 
 
 ## ConfigMaps
 
-The `config.yaml` file is used as a [ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/) to run the server in k8s:
+The `frontend.yaml` configuration contains the definition of a 
+[ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/):
 
-  kubectl create configmap frontend-config --from-file=config.yaml
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+
+data:
+  config.yaml: |
+    # Used as ConfigMap to run the server in k8s.
+    server:
+      workdir: /var/lib/flask
+
+    db:
+      # Here the 'hostname' must match the Service `name`
+      # fronting the backend (see backend-service.yaml)
+      uri: "mongodb://backend:27017/my-db"
+      collection: "sampledata"
+```
+
+which is then used to configure the Web server, by first defining a `Volume`:
+
+```yaml
+      volumes:
+      - name: config
+        configMap:
+          name: frontend-config
+```
+
+and then mounting it on the container:
+
+```yaml
+  spec:
+    containers:
+    - image: massenz/simple-flask:0.5.1
+      ...
+      volumeMounts:
+      - name: config
+        mountPath: "/etc/flask"
+        readOnly: true
+```
+
+which creates a file in the container at `/etc/flask/config.yaml`.
+
+If the previous `ConfigMap` spec were to be saved to a `config.yaml` file, it could have been 
+created using:
+
+    kubectl create configmap frontend-config --from-file=config.yaml
 
 
 # 2-tier Service in Kubernetes
 
-Creates a two tier (frontend / backend) service, with the backend running a stateful MongoDB and the Web frontend is ran as a Flask application:
+First create the backing DB (based on MongoDB):
 
-```
-  # Authenticate to Registry first
-  docker login docker.apple.com
+    kubectl apply -f config/backend.yaml
+    
+This will create a `PersistentVolumeClaim` that will be mounted by the
+`mongo` Pod and will retain data across restarts (this is not, however
+a `StatefulSet`).
 
-  # Create & Push Docker image for Web app
-  docker build -t docker.apple.com/amp-sre/simple-flask:0.3.1 .
-  docker push docker.apple.com/amp-sre/simple-flask:0.3.1
-```
+The "fronting" service for this Pod makes it reachable via:
 
-```
-  # Create the Volume claim, and start the DB Pod
-  # (which will mount the volume)
-  kc apply -f mongo-pvc.yaml
-  kc apply -f mongo-pod.yaml
-  kc apply -f backend-service.yaml
-```
-```
-  # Create the configuration (mounted as as volume) then start
-  # and deploy the frontend service.
-  kc create configmap frontend-config -n apps --from-file=config.yaml
-  kc apply -f flask-replicas.yaml
-  kc apply -f frontend-service.yaml
-```
-```
-  # Verify that the Pods are running
-  kc get po -n apps
+    mongodb://backend:27017 
 
-  # Check out the details on one of them (change the
-  # name to the actual pod name)
-  kc describe pod frontend-cluster-cpgms -n apps
-```
 
-and then to verify:
+The front-end Web tier (load-balanced via the `frontend` Service) is created via a `Deployment` 
+composed of `replicas` nodes (currently, 3):
 
-```
-  kc exec -it frontend-cluster-cpgms -n apps /bin/bash
+    kubectl apply -f frontend.yaml
 
-    curl http://localhost:8080/config
+Check that the web servers are up and running:
 
-    curl -X POST -d '{"_id": "100", "name": "Rebo", "job": "Cisco"}' \
+    kubectl get pods
+
+Inside the cluster, several `Env` variables will point to various services; however,
+the K8s DNS will resolve the services (using the `Service`'s `name`):
+
+```bash
+$ kubectl exec frontend-cluster-4q8j5 -- \
+        curl -v http://frontend/config | python -m json.tool
+
+{
+    "application_root": "/",
+    "db_collection": "sampledata",
+    "db_uri": "mongodb://backend:27017/my-db",
+    "debug": false,
+    "env": "production",
+    "explain_template_loading": false,
+    "health": "UP",
+    ...
+}
+
+$ kubectl exec -it frontend-cluster-4q8j5 -- \
+        curl -X POST -d '{"_id": "100", "name": "Rebo", "job": "Cisco"}' \
           -H "Content-type: application/json" \
-          http://localhost:8080/api/v1/entity
+          http://frontend/api/v1/entity
 
-    curl http://localhost:8080/api/v1/entity/100
+{"msg":"inserted"}
+
+$ kubectl exec -it frontend-cluster-4q8j5 -- curl -fs \                      
+          -H "Content-type: application/json" \
+          http://frontend/api/v1/entity/100
+
+[{"_id": "100", "job": "Cisco", "name": "Rebo"}]
 ```
+
 
 # Deploy StatefulSet (Cassandra)
 
-See files in the [`configs/stateful`](configs/stateful) folder.
+`TODO: this section needs to be reviewed`
+
+See files in the [`cassandra`](configs/cassandra) folder.
 
     $ kubectl apply -f configs/stateful/test-cluster.yaml
 

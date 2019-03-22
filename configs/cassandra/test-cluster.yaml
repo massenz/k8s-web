@@ -1,8 +1,11 @@
+# Load-balanced fronting service for the Cassandra cluster
+# reachable at URL broker_url=test-cluster:9042 from within
+# the Kubernetes cluster pods.
+#
 apiVersion: v1
 kind: Service
 metadata:
   name: test-cluster
-  namespace: amp
 
 spec:
   selector:
@@ -17,7 +20,6 @@ apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   name: cassandra
-  namespace: amp
 
 spec:
   serviceName: cassandra
@@ -53,11 +55,11 @@ spec:
       - ReadWriteOnce
 
 ---
+# Headless service, for the StatefulSet.
 apiVersion: v1
 kind: Service
 metadata:
   name: cassandra
-  namespace: amp
 
 spec:
   clusterIP: None

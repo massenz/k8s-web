@@ -9,7 +9,7 @@ metadata:
     rel: staging
 
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: webapp
@@ -25,7 +25,7 @@ spec:
           name: frontend-config
 
       containers:
-      - image: docker.apple.com/amp-sre/simple-flask:0.4.0
+      - image: massenz/simple-flask:0.5.1
         name: webapp
         ports:
         - name: http
@@ -73,10 +73,7 @@ metadata:
 
 data:
   config.yaml: |
-    # Used as ConfigMap to run the server in k8s:
-    #
-    #   kc create configmap frontend-config --from-file=frontend-config.yaml
-
+    # Used as ConfigMap to run the server in k8s.
     server:
       workdir: /var/lib/flask
 

@@ -1,8 +1,5 @@
-# Persistent Volume claim backed by the
+# Persistent Volume claims backed by the
 # default storage class, created dynamically.
-#
-# Using this (see mongo-pod.yaml) does not require
-# creating a Persistent Volume first.
 
 ---
 apiVersion: v1

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__author__ = 'M. Massenzio (mmassenzio@apple.com'
+__author__ = 'M. Massenzio (massenz@adobe.com'
 
 # Standard imports
 import argparse
@@ -248,7 +248,7 @@ def prepare_env(config=None):
         raise ValueError("A configuration file MUST be provided, use --config-file")
     config_file = pathlib.Path(config.config_file)
     if not config_file.exists():
-        raise FileNotFound(f"Configuration file {config_file} does not exist")
+        raise FileNotFound(f"Configuration file {config.config_file} does not exist")
 
     with open(config_file, 'r') as cfg:
         configs = yaml.load(cfg)

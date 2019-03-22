@@ -1,8 +1,6 @@
-# Copyright (c) 2018 Apple Inc.  All rights reserved.
-# Created M. Massenzio (mmassenzio@apple.com), 7/9/18
 from flask_login import UserMixin
 
-__author__ = 'M. Massenzio (mmassenzio@apple.com'
+__author__ = 'M. Massenzio (massenz@adobe.com'
 
 
 class User(UserMixin):

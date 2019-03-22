@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-__author__ = 'M. Massenzio (mmassenzio@apple.com'
 
 import json
 
@@ -26,12 +25,6 @@ app.config.update(
 log = logging.create_logger(app)
 log.setLevel("DEBUG")
 
-# Hubble support
-registry = global_registry()
-reporter = HubbleTimedReporter(registry, "http://vp00-itunes-hubblehttp.apple.com", 8500,
-                               "pegasus.api-server", 30)
-qc = registry.counter("queries.counter")
-
 
 # TODO: move to YAML config
 client_id = 'b3278dfe64fe2b29277c'
@@ -39,10 +32,10 @@ client_secret = '4f5f946f171ae4a46a700cbd8858241befdc091a'
 
 # This MUST be a "sub-path" of the redirect_uri configured in the app settings.
 redirect_uri = 'http://localhost:8080/callback'
-oauth_url = 'https://github.pie.apple.com/login/oauth/authorize'
-token_url = 'https://github.pie.apple.com/login/oauth/access_token'
-user_url = 'https://api.github.pie.apple.com/user'
-teams_url = 'https://github.pie.apple.com/api/v3/user/teams'
+oauth_url = 'https://github.com/login/oauth/authorize'
+token_url = 'https://github.com/login/oauth/access_token'
+user_url = 'https://api.github.com/user'
+teams_url = 'https://github.com/api/v3/user/teams'
 scope = ['user']
 
 github = OAuth2Session(client_id, redirect_uri=redirect_uri, scope=scope)

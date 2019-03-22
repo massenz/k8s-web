@@ -1,7 +1,7 @@
 # Created by M. Massenzio (c) 2018
 
 FROM python:3.6
-MAINTAINER Marco Massenzio (mmassenzio@apple.com)
+MAINTAINER Marco Massenzio (massenz@adobe.com)
 
 # TODO: Use K8s Secrets
 ENV DEBUG='' SERVER_PORT=8080 SECURE_PORT=8443 SECRET='chang3Me'
@@ -22,4 +22,4 @@ EXPOSE ${SERVER_PORT} ${SECURE_PORT}
 # DO NOT use CMD as it will be ignored; also CLI invocations will
 # ignore any arguments passed following the container image.
 ENTRYPOINT pipenv run ./run_server.py ${DEBUG} -p ${SERVER_PORT} \
-    -s ${SECURE_PORT} --secret-key ${SECRET}
+    -s ${SECURE_PORT} --secret-key ${SECRET} --accept-external
