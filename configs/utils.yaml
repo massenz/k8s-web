@@ -1,0 +1,19 @@
+# Copyright Kapsules.io (c) 2018. All rights reserved.
+#
+# Pod running a number of utility containers for dev/testing.
+
+apiVersion: v1
+kind: Pod
+metadata:
+    name: utils
+    labels:
+      app: utils
+      scope: dev
+
+spec:
+  containers:
+    - image: massenz/dnsutils:1.1
+      name: dnsutils
+      command: ["sleep"]
+      args:
+      - infinity

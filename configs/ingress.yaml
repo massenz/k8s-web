@@ -1,0 +1,23 @@
+# Ingress YAML
+# See: https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/#enable-the-ingress-controller
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: frontend-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+ rules:
+ - host: frontend.info
+   http:
+     paths:
+     - path: /kmaps/*
+       backend:
+         serviceName: kmaps
+         servicePort: 80
+     - path: /kmaps/v2/*
+       backend:
+         serviceName: kmaps-v2
+         servicePort: 80
