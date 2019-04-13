@@ -1,0 +1,86 @@
+# Web Server Deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-v2
+  labels:
+    app: web-frontend
+    rel: staging
+
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: webapp-v2
+
+  template:
+    metadata:
+      labels:
+        app: webapp-v2
+    spec:
+      volumes:
+      - name: config
+        configMap:
+          name: frontend-config-v2
+
+      containers:
+      - image: massenz/simple-flask:0.6.6
+        name: webapp
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+
+        volumeMounts:
+        - name: config
+          mountPath: "/etc/flask"
+          readOnly: true
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+
+        env:
+        - name: SERVER_PORT
+          value: "8080"
+
+        livenessProbe:
+          httpGet:
+            path: "/health"
+            port: 8080
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-v2
+
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+  selector:
+    app: webapp-v2
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config-v2
+
+data:
+  config.yaml: |
+    # Used as ConfigMap to run the server in k8s.
+    server:
+      workdir: /var/lib/flask
+      url_prefix: /kmaps/v2
+      url_v1: /kmaps
+
+    db:
+      # Here the 'hostname' must match the Service `name`
+      # fronting the backend (see backend-service.yaml)
+      uri: "mongodb://backend:27017/my-db"
+      collection: "sampledata"

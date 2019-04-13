@@ -28,6 +28,8 @@ def parse_args():
 
     parser.add_argument('--secret-key', help='Used by the flask server to encrypt secure cookies')
 
+    parser.add_argument('--workdir', help='The application working directory')
+
     parser.add_argument('--config-file', default=CONFIG_FILE,
                         help=f'Location of the YAML file with configuration values; by default, '
                              f'{CONFIG_FILE}')
