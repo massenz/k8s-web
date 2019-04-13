@@ -31,6 +31,7 @@ from flask import (
     jsonify,
     render_template,
     request,
+    url_for,
 )
 
 from utils import choose, SaneBool
@@ -126,12 +127,27 @@ def get_data(fname):
     with open(fname, 'r') as data:
         return data.read()
 
+
+# Context Processor for Template
+
+@application.context_processor
+def utility_processor():
+    url_prefix = application.config['URL_PREFIX']
+
+    def static(resource):
+        # `url_for` returns the leading / as it is computed as an absolute path.
+        return f"{url_prefix}{url_for('static', filename=resource)}"
+    return dict(static_for=static)
+
+
 # Endpoints and Views
 
 
 @application.route('/')
 def home():
-    return render_template('index.html', workdir=get_workdir())
+    return render_template('index.html',
+                           workdir=get_workdir(),
+                           v1_url=application.config['URL_V1'])
 
 
 @application.route('/health')
@@ -202,7 +218,7 @@ def create_entity():
 
 @application.route('/statuscode/<code>')
 def statuscode(code):
-    logging.info("Returning code".format(code))
+    logging.info(f"Returning code {code}")
     if code == "666":
         raise RuntimeError("Failure!")
     return make_response('Returning status: {}'.format(code), int(code))
@@ -214,6 +230,13 @@ def handle_invalid_usage(error):
     response = jsonify(error.to_dict())
     response.status_code = error.status_code
     return response
+
+
+@application.errorhandler(404)
+def handle_notfound(error):
+    message = f"The path `{request.path}` was not found on this server [{request.url}]"
+    logging.error(error)
+    return message, 404
 
 
 @application.before_first_request
@@ -242,7 +265,6 @@ def prepare_env(config=None):
     application.config['TESTING'] = choose('FLASK_TESTING', False)
     application.config['SECRET_KEY'] = choose('FLASK_SECRET_KEY', 'd0n7useth15', config,
                                               'secret_key')
-    application.config['WORKDIR'] = choose('FLASK_WORKDIR', '/tmp', config, 'workdir')
 
     if not config.config_file:
         raise ValueError("A configuration file MUST be provided, use --config-file")
@@ -251,6 +273,9 @@ def prepare_env(config=None):
         raise FileNotFound(f"Configuration file {config.config_file} does not exist")
 
     with open(config_file, 'r') as cfg:
-        configs = yaml.load(cfg)
+        configs = yaml.safe_load(cfg)
         application.config['DB_URI'] = configs['db']['uri']
         application.config['DB_COLLECTION'] = configs['db']['collection']
+        application.config['URL_PREFIX'] = configs['server'].get('url_prefix', '')
+        application.config['URL_V1'] = configs['server'].get('url_v1')
+        application.config['WORKDIR'] = config.workdir or configs['server'].get('workdir', '/tmp')

@@ -1,17 +1,28 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/html">
-<head lang="en">
+  <head lang="en">
     <meta charset="UTF-8">
-    <link rel="stylesheet" type="text/css" href="../static/stylesheet.css">
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" type="text/css"
+          href="{{ static_for('stylesheet.css') }}">
+    <link rel="shortcut icon" href="{{ static_for('favicon.ico') }}">
     <title>Simple Flask Server</title>
-</head>
-<body>
-    <p>
-        This is the main page, mostly just used to test the app is running.
-    </p>
-    <p>
-        This application's working directory is: <pre>{{ workdir }}</pre>
-    </p>
-</body>
+  </head>
+  <body>
+    <div><img src="{{ static_for('logo.png') }}" height="42" width="42">
+        <h1>KMaps Web Server - v2</h1>
+    </div>
+    <div>
+        <p>
+            This is the main page, mostly just used to test the app is running.
+        </p>
+        <p>
+            This application's working directory is: <pre>{{ workdir }}</pre>
+        </p>
+    </div>
+    {% if v1_url %}
+    <div>
+        <h6>If you prefer you can <a href="{{ v1_url }}">go back to v1</a></h6>
+    </div>
+    {% endif %}
+  </body>
 </html>

@@ -1,7 +1,7 @@
 # Simple Web Application -- k8s-webserver
 
-__Version:__ `0.5.2`
-__Last Updated:__ 2019-04-11
+__Version:__ `0.6.6`
+__Last Updated:__ 2019-04-12
 
 
 Simple [Flask](https://flask.io) server to demonstrate K8s capabilities; run with `--help` to see the CLI options available.
@@ -22,10 +22,13 @@ the `install` command is necessary only once, or if you modify the `Pipenv` file
 
 This is built as a container:
 
+**NOTE**
+> `VERSION` may be different but **must** match the value in `frontend.yaml`
+
 ```bash
-    docker login
-    docker build -t massenz/simple-flask:$VERSION -f docker/Dockerfile .
-    docker push massenz/simple-flask:$VERSION
+VERSION=0.5.1 && IMAGE="massenz/simple-flask" && \
+    docker build -t $IMAGE:$VERSION -f docker/Dockerfile . && \
+    docker push $IMAGE:$VERSION
 ```
 
 expecting the following `ENV` args:
@@ -160,7 +163,10 @@ $ kubectl exec -it frontend-cluster-4q8j5 -- curl -fs \
 
 # Ingress Controller
 
-Deployed in the manner described above, the service is unreachable from outside the Kubernetes cluster; in order to make it reachable, we deploy an [Ingress Controller based on Ngnix](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/#enable-the-ingress-controller).
+Deployed in the manner described above, the service is unreachable from outside the Kubernetes cluster; in order to make it reachable, we deploy an [NGNIX Ingress Controller](https://kubernetes.github.io/ingress-nginx/).
+
+**NOTE**
+> The following is based on the [Kubernetes tutorial on Ingress Controller](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/#enable-the-ingress-controller).
 
 The first step is to actually deploy the Controller:
 
@@ -214,16 +220,22 @@ The real point of adding an Ingress controller is however to somehow add behavio
 apiVersion: extensions/v1beta1
 kind: Ingress
 ...
-     paths:
-     - path: /kmaps/*
-       backend:
-         serviceName: kmaps
-         servicePort: 80
-     - path: /kmaps/v2/*
-       backend:
-         serviceName: kmaps-v2
-         servicePort: 80
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+...
+      paths:
+      - path: /kmaps/?(.*)
+        backend:
+          serviceName: kmaps
+          servicePort: 80
+      - path: /kmaps/v2/?(.*)
+        backend:
+          serviceName: kmaps-v2
+          servicePort: 80
 ```
+
+**NOTE**
+> The `rewrite` annotation is described [here](https://kubernetes.github.io/ingress-nginx/examples/rewrite/) and is required, so that application URLs can be mapped back to what the Web application expects.
 
 Deploy the `ingress.yaml` spec:
 
@@ -231,11 +243,104 @@ Deploy the `ingress.yaml` spec:
 kubectl apply -f configs/ingress.yaml
 ```
 
-and modify `/etc/hosts` so that `frontend.info` points to the `minikube ip`; then the Flask frontend will be reachable at: `http://frontend.info/kmaps/`.
+and (optionally) modify `/etc/hosts` so that `frontend.info` points to the `minikube ip`; then the Flask frontend will be reachable at: `http://frontend.info/kmaps/`.
 
-Right now, however, as we haven't deployed yet the `kmaps-v2` service, `http://frontend.info/kmaps/v2/` will yield a `503 Service Unavailable` response (which is different from the `404` one would get by simply using a random URL).
+**NOTE**
+> This is only to emulate a DNS service that would map the cluster/service domain - it is entirely irrelevant for the purposes of the example here.
+
 
 ### Deploy the `v2` service
 
+Right now, however, as we haven't deployed yet the `kmaps-v2` service, `http://frontend.info/kmaps/v2/` will yield a `503 Service Unavailable` response (which is different from the `404` one would get by simply using a random URL).
+
+Checkout the `v2` tag, and build the new container:
+
+**NOTE**
+> `VERSION` may be different but **must** match the value in `frontend-v2.yaml`
 
 
+```bash
+VERSION=0.6.6 && \
+    IMAGE="massenz/simple-flask" && \
+    docker build -t $IMAGE:$VERSION -f docker/Dockerfile . && \
+    docker push $IMAGE:$VERSION
+```
+and deploy the new version *alongside* the older one:
+
+    kubectl apply -f configs/frontend-v2.yaml
+
+**NOTE**
+> We are **not** executing a rollout deployment of the new version: the point of this exercise is to demonstrate how two distinct versions/deployment of the same service can live alongside the same Kubernetes cluster, and an Ingress controller may be used to direct traffic to the correct one according to a URL pattern.
+
+then expose the `kmaps-v2` service:
+
+    kubectl expose deployment frontend-v2 --port 80 --target-port 8080 \
+        --type NodePort --name kmaps-v2
+
+At this point, the new version of the service is reachable via:
+
+    curl -fs http://frontend.info/kmaps/v2
+    
+and note the returned page is for the new service:
+
+```html
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/html">
+  <head lang="en">
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css"
+          href="/kmaps/v2/static/stylesheet.css">
+    <link rel="shortcut icon" href="/kmaps/v2/static/favicon.ico">
+    <title>Simple Flask Server</title>
+  </head>
+  <body>
+    <div><img src="/kmaps/v2/static/logo.png" height="42" width="42">
+        <h1>KMaps Web Server - v2</h1>
+    </div>
+    ...
+```
+
+It is important to note how the URL had to be "rewritten" so that when the controller rewrites them, the resulting path matches the file location:
+
+        <img src="/kmaps/v2/static/logo.png" height="42" width="42">
+
+was generated in Python dynamically via:
+
+```python
+@application.context_processor
+def utility_processor():
+    url_prefix = application.config['URL_PREFIX']
+
+    def static(resource):
+        # `url_for` returns the leading / as it is computed as an absolute path.
+        return f"{url_prefix}{url_for('static', filename=resource)}"
+    return dict(static_for=static)
+
+```
+
+and the `URL_PREFIX` configuration was obtained via the `ConfigMap` for [`frontend-v2`](configs/frontend-v2.yaml):
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config-v2
+
+data:
+  config.yaml: |
+    server:
+      workdir: /var/lib/flask
+      url_prefix: /kmaps/v2
+      url_v1: /kmaps
+...
+```
+
+Equally, the link back to `v1` can be provided by dynamically loading it from the same configuration (`url_v1`) in [`index.html`](templates/index.html):
+
+```html
+    {% if v1_url %}
+    <div>
+        <h6>If you prefer you can <a href="{{ v1_url }}">go back to v1</a></h6>
+    </div>
+    {% endif %}
+```

@@ -7,17 +7,19 @@ kind: Ingress
 metadata:
   name: frontend-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    # See: https://kubernetes.github.io/ingress-nginx/examples/rewrite/
+    # NOTE: this only works for version 0.x.x of the Ngnix Ingress controller.
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
 spec:
- rules:
- - host: frontend.info
-   http:
-     paths:
-     - path: /kmaps/*
-       backend:
-         serviceName: kmaps
-         servicePort: 80
-     - path: /kmaps/v2/*
-       backend:
-         serviceName: kmaps-v2
-         servicePort: 80
+  rules:
+  - host: frontend.info
+    http:
+      paths:
+      - path: /kmaps/?(.*)
+        backend:
+          serviceName: kmaps
+          servicePort: 80
+      - path: /kmaps/v2/?(.*)
+        backend:
+          serviceName: kmaps-v2
+          servicePort: 80

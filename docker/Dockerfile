@@ -1,7 +1,7 @@
-# Created by M. Massenzio (c) 2018
+# Created by M. Massenzio (c) 2018-2019
 
 FROM python:3.6
-MAINTAINER Marco Massenzio (massenz@adobe.com)
+MAINTAINER Marco Massenzio (marco@alertavert.com)
 
 # TODO: Use K8s Secrets
 ENV DEBUG='' SERVER_PORT=8080 SECURE_PORT=8443 SECRET='chang3Me'
@@ -11,8 +11,10 @@ WORKDIR /opt/simple
 ADD Pipfile Pipfile.lock ./
 RUN pip install -U pip pipenv
 RUN pipenv install
+RUN mkdir -p /var/lib/flask
 
 ADD templates ./templates/
+ADD static ./static/
 ADD utils ./utils
 ADD application.py run_server.py ./
 
