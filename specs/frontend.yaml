@@ -25,7 +25,7 @@ spec:
           name: frontend-config
 
       containers:
-      - image: massenz/simple-flask:0.5.1
+      - image: massenz/simple-flask:0.5.4
         name: webapp
         ports:
         - name: http
