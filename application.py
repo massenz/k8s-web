@@ -25,6 +25,7 @@ import re
 # Flask imports
 import pymongo
 import yaml
+from bson import ObjectId
 from flask import (
     Flask,
     make_response,
@@ -194,9 +195,10 @@ def get_entity(id):
     client = pymongo.MongoClient(application.config['DB_URI'])
     db = client.get_database()
     coll = db.get_collection(application.config['DB_COLLECTION'])
-    cursor = coll.find({'_id': id})
+    cursor = coll.find({'_id': ObjectId(id)})
     result = []
     for item in cursor:
+        item["id"] = str(item.pop("_id"))
         result.append(item)
 
     return make_response(jsonify(result))

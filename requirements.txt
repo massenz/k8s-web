@@ -1,0 +1,19 @@
+# Packages required.
+
+flask
+flask-login
+itsdangerous
+jinja2
+markupsafe
+pymongo
+python-dateutil
+pyyaml
+requests_oauthlib
+simplejson
+six
+werkzeug
+
+# Development packages
+black
+nose
+ipython
