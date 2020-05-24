@@ -63,7 +63,7 @@ spec:
   - name: http
     port: 80
     targetPort: http
-    nodePort: 8090
+    nodePort: 30008
   selector:
     app: webapp-v2
 

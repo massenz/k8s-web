@@ -68,7 +68,7 @@ spec:
     port: 80
     targetPort: http
     # Optional field, makes the URL repeatable across deployments
-    nodePort: 8089
+    nodePort: 30007
   selector:
     app: webapp
 
