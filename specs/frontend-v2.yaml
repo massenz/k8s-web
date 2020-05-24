@@ -58,10 +58,12 @@ metadata:
   name: frontend-v2
 
 spec:
+  type: NodePort
   ports:
   - name: http
     port: 80
     targetPort: http
+    nodePort: 8090
   selector:
     app: webapp-v2
 

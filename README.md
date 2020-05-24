@@ -318,7 +318,7 @@ def utility_processor():
 
 ```
 
-and the `URL_PREFIX` configuration was obtained via the `ConfigMap` for [`frontend-v2`](configs/frontend-v2.yaml):
+and the `URL_PREFIX` configuration was obtained via the `ConfigMap` for [`frontend-v2`](specs/frontend-v2.yaml):
 
 ```yaml
 apiVersion: v1

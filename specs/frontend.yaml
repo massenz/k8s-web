@@ -52,16 +52,23 @@ spec:
             port: 8080
 
 ---
+# Exposes the frontend deployment externally to the cluster
+# Uses a NodePort; the Ingress method is preferred (see ingress.yaml).
+#
+# TODO: currently Ingress does not work, cannot expose the service.
 apiVersion: v1
 kind: Service
 metadata:
   name: frontend
 
 spec:
+  type: NodePort
   ports:
   - name: http
     port: 80
     targetPort: http
+    # Optional field, makes the URL repeatable across deployments
+    nodePort: 8089
   selector:
     app: webapp
 
