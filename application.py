@@ -24,13 +24,14 @@ import random
 import pymongo
 import yaml
 from bson import ObjectId
+from bson.errors import InvalidId
 from flask import (
     Flask,
     make_response,
     jsonify,
     render_template,
     request,
-    url_for,
+    url_for, send_from_directory,
 )
 
 from utils import choose, SaneBool, version
@@ -109,6 +110,12 @@ def home():
                            v1_url=application.config['URL_V1'])
 
 
+@application.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(application.root_path, 'static'),
+                               'favicon.png', mimetype='image/vnd.microsoft.icon')
+
+
 @application.route('/health')
 def health():
     """ A simple health-chek endpoint (can be used as a heartbeat too).
@@ -155,7 +162,11 @@ def get_entity(id):
     client = pymongo.MongoClient(application.config['DB_URI'])
     db = client.get_database()
     coll = db.get_collection(application.config['DB_COLLECTION'])
-    cursor = coll.find({'_id': ObjectId(id)})
+    try:
+        oid = ObjectId(id)
+    except InvalidId as error:
+        raise UuidNotValid(str(error))
+    cursor = coll.find({'_id': oid})
     result = []
     for item in cursor:
         item["id"] = str(item.pop("_id"))
@@ -183,7 +194,10 @@ def statuscode(code):
     logging.info(f"Returning code {code}")
     if code == "666":
         raise RuntimeError("Failure!")
-    return make_response('Returning status: {}'.format(code), int(code))
+    try:
+        return make_response(jsonify({"status": code}), int(code))
+    except ValueError:
+        raise ResponseError(f"{code} is not a valid integer status code")
 
 
 @application.errorhandler(ResponseError)
