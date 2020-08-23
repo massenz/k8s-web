@@ -19,10 +19,8 @@ import logging
 import os
 import pathlib
 import random
-
-# Flask imports
-import pymongo
 import yaml
+
 from bson import ObjectId
 from bson.errors import InvalidId
 from flask import (
@@ -31,29 +29,25 @@ from flask import (
     jsonify,
     render_template,
     request,
-    url_for, send_from_directory,
+    url_for,
+    send_from_directory,
 )
+import pymongo
 
 from utils import choose, SaneBool, version
 
-# TODO: move all logging configuration into its own logging.conf file
+
 FORMAT = '%(asctime)-15s [%(levelname)s] %(message)s'
 DATE_FMT = '%m/%d/%Y %H:%M:%S'
-
-application = Flask(__name__)
-
-
-# TODO: read from config.yaml instead
-MAX_RETRIES = 30
-RETRY_INTERVAL = 1
-DEFAULT_NAME = 'migration_logs'
-
 SENSITIVE_KEYS = (
     'SESSION_COOKIE_DOMAIN',
     'SESSION_COOKIE_PATH',
     'RUNNING_AS',
     'SECRET_KEY',
 )
+
+
+application = Flask(__name__)
 
 
 class ResponseError(Exception):

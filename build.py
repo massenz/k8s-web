@@ -6,7 +6,7 @@ from pathlib import Path
 
 from halo import Halo
 from sh import docker, ErrorReturnCode
-from utils import version
+from app.utils import version
 
 IMAGE = "massenz/simple-flask"
 DOCKERFILE = Path("docker")/"Dockerfile"
@@ -18,9 +18,10 @@ try:
         res = docker.build("-t", image, "-f", f"{DOCKERFILE}", ".")
     print(f"[SUCCESS] Image {image} built")
 
-    with Halo(text=f"Pushing container {image}", spinner='dots'):
-        res = docker.push(f"{image}")
-    print(f"[SUCCESS] Image {image} pushed to DockerHub")
+    if len(sys.argv) > 1 and sys.argv[1] == "--push":
+        with Halo(text=f"Pushing container {image}", spinner='dots'):
+            res = docker.push(f"{image}")
+        print(f"[SUCCESS] Image {image} pushed to DockerHub")
 
 except ErrorReturnCode as err:
     print(err.stdout)

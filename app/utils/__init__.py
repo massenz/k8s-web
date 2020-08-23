@@ -20,7 +20,7 @@ class SaneBool(object):
 
         Use it like thus:
 
-            >>> from utils import SaneBool
+            >>> from app.utils import SaneBool
             >>> SaneBool('true')
             True
             >>> bool('True')
@@ -121,7 +121,7 @@ def build():
 
 def read_settings():
     """ Returns the Project's settings as an iterable"""
-    basedir = os.getenv("BASEDIR", '.')
+    basedir = os.getenv("BASEDIR", '')
     settings = pathlib.Path(basedir) / "build.settings"
     if not settings.exists():
         ex = FileNotFoundError()

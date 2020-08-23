@@ -340,7 +340,7 @@ data:
 ...
 ```
 
-Equally, the link back to `v1` can be provided by dynamically loading it from the same configuration (`url_v1`) in [`index.html`](templates/index.html):
+Equally, the link back to `v1` can be provided by dynamically loading it from the same configuration (`url_v1`) in [`index.html`](app/templates/index.html):
 
 ```html
     {% if v1_url %}
