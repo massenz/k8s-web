@@ -1,10 +1,10 @@
 # Example configuration file
 
 server:
-  workdir: /var/lib/flask
+  workdir: /tmp
 
 db:
   # Here the 'hostname' must match the Service `name`
   # fronting the backend (see backend-service.yaml)
-  uri: "mongodb://backend:27017/my-db"
-  collection: "sampledata"
+  uri: "mongodb://localhost:27017/test-db"
+  collection: "exmaples"

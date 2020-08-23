@@ -2,6 +2,7 @@
 
 flask
 flask-login
+halo
 itsdangerous
 jinja2
 markupsafe

@@ -14,13 +14,11 @@
 
 __author__ = 'M. Massenzio (massenz@adobe.com'
 
-# Standard imports
 import argparse
-import datetime
 import logging
 import os
 import pathlib
-import re
+import random
 
 # Flask imports
 import pymongo
@@ -35,7 +33,7 @@ from flask import (
     url_for,
 )
 
-from utils import choose, SaneBool
+from utils import choose, SaneBool, version
 
 # TODO: move all logging configuration into its own logging.conf file
 FORMAT = '%(asctime)-15s [%(levelname)s] %(message)s'
@@ -92,49 +90,10 @@ def get_workdir():
     return workdir
 
 
-def build_fname(migration_id, ext):
-    workdir = get_workdir()
-    timestamp = datetime.datetime.now().isoformat()
-    # Remove msec part and replace colons with dots (just to avoid Windows stupidity)
-    prefix = timestamp.rsplit('.')[0].replace(':', '.')
-    return os.path.join(workdir, migration_id, '{prefix}_{name}.{ext}'.format(
-        prefix=prefix, name=DEFAULT_NAME, ext=ext))
-
-
-def find_first_match(ext):
-    """ Returns the first file matching the given extension.
-
-    :param ext: the file extension
-    :return: the most recent filename that matches the ID and extension
-    :raises: FileNotFound if the file does not exist
-    """
-    pattern = re.compile(r'\.{ext}$'.format(ext=ext))
-    files = [f for f in os.listdir(get_workdir()) if os.path.isfile(os.path.join(get_workdir(), f))]
-    for fname in files:
-        if re.match(pattern=pattern, string=fname):
-            return os.path.join(get_workdir(), fname)
-    raise FileNotFound("Could not find any file whose extension matches '{}'".format(ext))
-
-
-def get_data(fname):
-    """ Reads the file and returns its contents.
-
-    :param fname: the name of the file to read.
-    :return: the contents of the file.
-    :raises FileNotFound: if the file does not exist.
-    """
-    if not os.path.exists(fname):
-        raise FileNotFound("Could not find {name}".format(name=fname))
-    with open(fname, 'r') as data:
-        return data.read()
-
-
 # Context Processor for Template
-
 @application.context_processor
 def utility_processor():
     url_prefix = application.config['URL_PREFIX']
-
     def static(resource):
         # `url_for` returns the leading / as it is computed as an absolute path.
         return f"{url_prefix}{url_for('static', filename=resource)}"
@@ -142,12 +101,11 @@ def utility_processor():
 
 
 # Endpoints and Views
-
-
 @application.route('/')
 def home():
     return render_template('index.html',
                            workdir=get_workdir(),
+                           version=version(),
                            v1_url=application.config['URL_V1'])
 
 
@@ -160,18 +118,16 @@ def health():
     return make_response(jsonify({'status': 'ok'}))
 
 
-@application.route('/demo')
-def demo():
-    return make_response(jsonify({'status': 'ok', 'query_args': request.args}))
-
-
 @application.route('/config')
 def get_configs():
     """ Configuration values
 
     :return: a JSON response with the currently configured application values
     """
-    configz = {'health': 'UP'}
+    configz = {
+        'health': 'UP',
+        'cookies': request.cookies
+    }
     is_debug = application.config.get('DEBUG')
     for key in application.config.keys():
         # In a non-debug session, sensitive config values are masked
@@ -185,7 +141,11 @@ def get_configs():
         if varz is not None and not (isinstance(varz, bool) or isinstance(varz, int)):
             varz = str(varz)
         configz[key.lower()] = varz
-    return make_response(jsonify(configz))
+    response = make_response(jsonify(configz))
+    randval = random.randint(1000, 9999)
+    application.logger.info(f"Setting cookie value to {randval}")
+    response.set_cookie('y-track', value=f"config-tracker-{randval}", path="/config")
+    return response
 
 
 @application.route('/api/v1/entity/<id>')
@@ -274,7 +234,7 @@ def prepare_env(config=None):
     if not config_file.exists():
         raise FileNotFound(f"Configuration file {config.config_file} does not exist")
 
-    with open(config_file, 'r') as cfg:
+    with config_file.open('r') as cfg:
         configs = yaml.safe_load(cfg)
         application.config['DB_URI'] = configs['db']['uri']
         application.config['DB_COLLECTION'] = configs['db']['collection']

@@ -10,7 +10,7 @@ metadata:
 
 spec:
   ports:
-  - name: http
+  - name: mongo
     port: 27017
     targetPort: 27017
 

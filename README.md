@@ -1,46 +1,51 @@
 # Simple Web Application -- k8s-webserver
 
-__Version:__ `0.6.6`
-__Last Updated:__ 2019-04-12
+__Version:__ `0.5.6`
+__Last Updated:__ 2020-08-21
 
 
 Simple [Flask](https://flask.io) server to demonstrate K8s capabilities; run with `--help` to see the CLI options available.
 
-# Run locally
+## Run locally
 
-This uses ['pipenv'](https://docs.pipenv.org) to build a local virtualenv and run the application, see the docs for how to install it (essentially, `brew install pipenv`) then:
+Build the container:
 
-```bash
-    pipenv install
-    pipenv run ./run_server.py [options]
+```shell
+./build.py
 ```
-
-the `install` command is necessary only once, or if you modify the `Pipenv` file to add dependencies.
-
-
-# Container
-
-This is built as a container:
-
-**NOTE**
-> `VERSION` may be different but **must** match the value in `frontend.yaml`
-
-```bash
-VERSION=0.5.1 && IMAGE="massenz/simple-flask" && \
-    docker build -t $IMAGE:$VERSION -f docker/Dockerfile . && \
-    docker push $IMAGE:$VERSION
-```
-
-expecting the following `ENV` args:
+then run it (get the current version from `build.settings`):
 
 ```
-    ENV DEBUG=''
-        SERVER_PORT=8080
-        SECURE_PORT=8443
-        SECRET='chang3Me'
+docker run --rm -d mongo:3.7
+docker run --rm -d -p 8088:8080 massenz/simple-flask:$VERSION
+```
+
+the server is then reachable at [localhost:8080](http://localhost:8080).
+
+You can change some of the server arguments using the following `--env` args:
+
+```
+DEBUG=''
+SERVER_PORT=8080
+SECURE_PORT=8443
+SECRET='chang3Me'
 ```
 
 These can be re-defined either using `--env` with `docker run` or via the usual Kubernets method to inject `env` arguments in the template.
+
+## Kubernets Dashboard
+
+To run the [K8s Dashboard](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/) locally, it requires some security configurations; detailed instructions [here](https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/creating-sample-user.md):
+
+```shell
+kubectl apply -f admin.yaml
+kubectl apply -f admin-binding.yaml
+kubectl -n kubernetes-dashboard describe secret \
+    $(kubectl -n kubernetes-dashboard get secret | \
+      grep admin-user | awk '{print $1}')
+```
+
+More details on [Kubernetes Authentication](https://kubernetes.io/docs/reference/access-authn-authz/authentication/).
 
 
 ## ConfigMaps
@@ -280,7 +285,7 @@ then expose the `kmaps-v2` service:
 At this point, the new version of the service is reachable via:
 
     curl -fs http://frontend.info/kmaps/v2
-    
+
 and note the returned page is for the new service:
 
 ```html

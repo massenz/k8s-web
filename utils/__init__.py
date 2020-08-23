@@ -5,7 +5,7 @@ import pathlib
 import re
 
 
-VERSION_PATTERN = re.compile('^\s*version\s*=\s*(?P<version>[0-9.]+)$')
+VERSION_PATTERN = re.compile('^\s*version\s*=\s*(?P<version>[0-9.]+)-?(?P<build>\w+)?$')
 
 
 class SaneBool(object):
@@ -106,7 +106,21 @@ def choose(key, default, config=None, config_attr=None):
 
 
 def version():
-    """ Returns the Project's Version"""
+    for line in read_settings():
+        m = re.match(VERSION_PATTERN, line)
+        if m:
+            return m.group('version')
+
+
+def build():
+    for line in read_settings():
+        m = re.match(VERSION_PATTERN, line)
+        if m:
+            return m.group('build')
+
+
+def read_settings():
+    """ Returns the Project's settings as an iterable"""
     basedir = os.getenv("BASEDIR", '.')
     settings = pathlib.Path(basedir) / "build.settings"
     if not settings.exists():
@@ -117,6 +131,4 @@ def version():
         raise ex
     with settings.open() as build_settings:
         for line in build_settings.readlines():
-            m = re.match(VERSION_PATTERN, line)
-            if m:
-                return m.group('version')
+            yield line

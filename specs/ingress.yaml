@@ -15,11 +15,7 @@ spec:
   - host: frontend.info
     http:
       paths:
-      - path: /kmaps/?(.*)
+      - path: /app/?(.*)
         backend:
           serviceName: kmaps
-          servicePort: 80
-      - path: /kmaps/v2/?(.*)
-        backend:
-          serviceName: kmaps-v2
           servicePort: 80
