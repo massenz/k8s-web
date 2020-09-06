@@ -16,5 +16,6 @@ werkzeug
 
 # Development packages
 black
-nose
 ipython
+nose
+sh

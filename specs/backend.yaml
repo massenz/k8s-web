@@ -3,69 +3,64 @@
 #
 # Reachable at URL: mongodb://backend:27017/db_name
 
+# Headless service for the StatefulSet.
 apiVersion: v1
 kind: Service
 metadata:
   name: backend
 
 spec:
+  clusterIP: None
+  selector:
+    app: mongodb
   ports:
   - name: mongo
     port: 27017
     targetPort: 27017
 
-  selector:
-    app: db
-
-
 ---
-# Persistent Volume claim backed by the
-# default storage class, created dynamically.
-#
-# Using this does not require
-# creating a Persistent Volume first.
-
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mongodb-pvc
-
-spec:
-  resources:
-    requests:
-      storage: 100Mi
-  accessModes:
-  - ReadWriteOnce
-
----
-# A "stateful" Pod (but NOT a StatefulSet) which
+# The "stateful" Pod which
 # uses a PVC to back its persistent data.
-#
-# Re-creating a Pod using this will preserve the
-# data that had been written by the previously
-# running Pod(s).
-
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
-    name: mongo
+    name: "data-cluster-1"
     labels:
-      app: db
+      cluster: "mongodb-123-us-west-1"
       rel: "mongo-3.7"
-
 spec:
-  containers:
-    - image: "mongo:3.7"
-      name: mongodb
-      ports:
-      - containerPort: 27017
-        protocol: TCP
-      volumeMounts:
-      - name: mongo-pvc
-        mountPath: /data/db
+  serviceName: backend
+  selector:
+    matchLabels:
+      # Must match the {{.spec.metadata.labels}} in the pod {{.template}} below
+      app: mongodb
 
-  volumes:
-  - name: mongo-pvc
-    persistentVolumeClaim:
-      # Here the claimName MUST match the name in the PVC
-      claimName: mongodb-pvc
+  # TODO: scale this up to three nodes, but need odd MongoDB ReplicaSet configuration.
+  replicas: 1
+
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - image: "mongo:3.7"
+          name: mongodb
+          imagePullPolicy: "Always"
+          ports:
+          - containerPort: 27017
+            protocol: TCP
+          volumeMounts:
+          - name: mongo-pvc
+            mountPath: /data/db
+
+  volumeClaimTemplates:
+  - metadata:
+      # Here the `name` MUST match the name in the `volumeMounts`
+      name: mongo-pvc
+    spec:
+      resources:
+        requests:
+          storage: 20Mi
+      accessModes:
+      - ReadWriteOnce

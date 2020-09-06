@@ -46,6 +46,10 @@ SENSITIVE_KEYS = (
     'SECRET_KEY',
 )
 
+MONGO_HEALTH_KEYS = (
+    "debug", "ok", "version"
+)
+
 
 application = Flask(__name__)
 
@@ -74,7 +78,7 @@ class UuidNotValid(ResponseError):
     status_code = 406
 
 
-class FileNotFound(ResponseError):
+class NotFound(ResponseError):
     status_code = 404
 
 
@@ -112,11 +116,40 @@ def favicon():
 
 @application.route('/health')
 def health():
-    """ A simple health-chek endpoint (can be used as a heartbeat too).
+    """ A simple health-chek endpoint
 
-    :return: a 200 OK status (and echo back the query args)
+    As this will be used as a heartbeat too (e.g., by the "liveness" probe in Kubernetes) this
+    tries to be as fast as possible, and consume the least amount of system resources (thus
+    returning a string instead of "jsonifying" it).
+
+    :return: 200 OK status if the server responds at all
     """
-    return make_response(jsonify({'status': 'ok'}))
+    return '{"status": "UP"}'
+
+
+@application.route('/ready')
+def ready():
+    """ A readiness endpoint, checks on DB health too.
+
+    :return: a 200 OK status if this server is up, and the backing DB is ready too; otherwise, a
+             503 "Temporarily unavailable."
+    """
+    try:
+        # TODO: Move to a DAO class
+        client = pymongo.MongoClient(application.config['DB_URI'], serverSelectionTimeoutMS=250)
+        info = {}
+        for key in MONGO_HEALTH_KEYS:
+            info[key] = client.server_info().get(key, "null")
+        if info.get("ok") == 1:
+            info["status"] = "UP"
+        else:
+            info["status"] = "WARN"
+    except pymongo.errors.ServerSelectionTimeoutError as ex:
+        info = {"status": "DOWN", "error": str(ex)}
+    response = make_response(jsonify({'status': 'UP', "mongo": info}))
+    if info['status'] != "UP":
+        response.status_code = 503
+    return response
 
 
 @application.route('/config')
@@ -160,18 +193,16 @@ def get_entity(id):
         oid = ObjectId(id)
     except InvalidId as error:
         raise UuidNotValid(str(error))
-    cursor = coll.find({'_id': oid})
-    result = []
-    for item in cursor:
-        item["id"] = str(item.pop("_id"))
-        result.append(item)
-
+    result = coll.find_one(oid)
+    if not result:
+        raise NotFound(f"Entity with ID {id} could not be found")
+    result["id"] = str(result.pop("_id"))
     return make_response(jsonify(result))
 
 
 @application.route('/api/v1/entity', methods=['POST'])
 def create_entity():
-    """Tries to connect to the db and retrieve the entity show ID is `id`"""
+    """Creates a new entity in the DB, and returns its URI in the `Location` header"""
     # TODO: Move to a DAO class
     client = pymongo.MongoClient(application.config['DB_URI'])
     db = client.get_database()
@@ -240,7 +271,7 @@ def prepare_env(config=None):
         raise ValueError("A configuration file MUST be provided, use --config-file")
     config_file = pathlib.Path(config.config_file)
     if not config_file.exists():
-        raise FileNotFound(f"Configuration file {config.config_file} does not exist")
+        raise FileNotFoundError(f"Configuration file {config.config_file} does not exist")
 
     with config_file.open('r') as cfg:
         configs = yaml.safe_load(cfg)
