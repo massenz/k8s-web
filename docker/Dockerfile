@@ -3,17 +3,19 @@
 FROM python:3.7-slim
 MAINTAINER Marco Massenzio (marco@alertavert.com)
 
-ENV DEBUG='' SERVER_PORT=8080
+ENV DEBUG='' SERVER_PORT=8080 WORKINGDIR='/var/local/share/k8s-web'
 
 WORKDIR /opt/web
 
+RUN mkdir -p ${WORKINGDIR}
 ADD requirements.txt ./
 RUN pip install -U pip && \
     pip install -r requirements.txt
 
 ADD app/ ./
-ADD sample-config.yaml /etc/flask/config.yaml
+ADD config.yaml /etc/flask/config.yaml
 ADD build.settings ./
+
 
 EXPOSE ${SERVER_PORT}
 

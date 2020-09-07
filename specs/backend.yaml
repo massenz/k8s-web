@@ -1,13 +1,14 @@
 # A DB service, backed by a MongoDB Pod
 # Using a "stateful" service (with a Persistent Volume)
 #
-# Reachable at URL: mongodb://backend:27017/db_name
+# Reachable at URL:
+# mongodb://mongo-node-0.mongo-cluster,mongo-node-1.mongo-cluster,mongo-node-2.mongo-cluster:27017/db_name
 
 # Headless service for the StatefulSet.
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend
+  name: mongo-cluster
 
 spec:
   clusterIP: None
@@ -24,36 +25,41 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-    name: "data-cluster-1"
+    name: "mongo-node"
     labels:
       cluster: "mongodb-123-us-west-1"
       rel: "mongo-3.7"
 spec:
-  serviceName: backend
+  serviceName: mongo-cluster
   selector:
     matchLabels:
-      # Must match the {{.spec.metadata.labels}} in the pod {{.template}} below
+      # Must match the {{.spec.metadata.labels}} in the pods' {{.template}} below
       app: mongodb
-
-  # TODO: scale this up to three nodes, but need odd MongoDB ReplicaSet configuration.
-  replicas: 1
-
+  replicas: 3
   template:
     metadata:
       labels:
         app: mongodb
     spec:
+      terminationGracePeriodSeconds: 10
       containers:
         - image: "mongo:3.7"
           name: mongodb
           imagePullPolicy: "Always"
+          command:
+            - mongod
+            - "--replSet"
+            - rs0
+            - "--smallfiles"
+            - "--noprealloc"
+            - "--bind_ip"
+            - 0.0.0.0
           ports:
           - containerPort: 27017
             protocol: TCP
           volumeMounts:
           - name: mongo-pvc
             mountPath: /data/db
-
   volumeClaimTemplates:
   - metadata:
       # Here the `name` MUST match the name in the `volumeMounts`

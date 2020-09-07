@@ -1,34 +1,40 @@
 # Simple Web Application -- k8s-webserver
 
-__Version:__ `0.5.6`
-__Last Updated:__ 2020-08-21
+![Version](https://img.shields.io/badge/Version-0.5.7-blue)
+![Released](https://img.shields.io/badge/Released-2020.09.06-green)
+
+[![Author](https://img.shields.io/badge/Author-M.%20Massenzio-green)](https://bitbucket.org/marco)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+![OS Debian](https://img.shields.io/badge/OS-Linux-green)
 
 
-Simple [Flask](https://flask.io) server to demonstrate K8s capabilities; run with `--help` to see the CLI options available.
+A simple two-tier web app, using [Flask](https://flask.io) and [MongoDB](https://mongodb.com) 
+to experiment and learn K8s capabilities.
 
-## Run locally
 
-Build the container:
+## Container Builde
+
+Build the container (the value of `$VERSION` will be derived from `build.settings`):
 
 ```shell
-./build.py
+$ ./build.py
+
+[SUCCESS] Image massenz/simple-flask:$VERSION built
 ```
 then run it (get the current version from `build.settings`):
 
 ```
-docker run --rm -d mongo:3.7
-docker run --rm -d -p 8088:8080 massenz/simple-flask:$VERSION
+$ docker run --rm -d mongo:3.7
+$ docker run --rm -d -p 8088:8080 massenz/simple-flask:$VERSION
 ```
 
-the server is then reachable at [localhost:8080](http://localhost:8080).
+the server is then reachable at [http://localhost:8080].
 
 You can change some of the server arguments using the following `--env` args:
 
 ```
-DEBUG=''
-SERVER_PORT=8080
-SECURE_PORT=8443
-SECRET='chang3Me'
+$ docker run --rm -d -p 8088:8080 massenz/simple-flask:$VERSION \
+     --env DEBUG='true' SERVER_PORT=9900 SECRET='chang3Me'
 ```
 
 These can be re-defined either using `--env` with `docker run` or via the usual Kubernets method to inject `env` arguments in the template.
@@ -38,11 +44,12 @@ These can be re-defined either using `--env` with `docker run` or via the usual 
 To run the [K8s Dashboard](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/) locally, it requires some security configurations; detailed instructions [here](https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/creating-sample-user.md):
 
 ```shell
-kubectl apply -f admin.yaml
-kubectl apply -f admin-binding.yaml
-kubectl -n kubernetes-dashboard describe secret \
-    $(kubectl -n kubernetes-dashboard get secret | \
-      grep admin-user | awk '{print $1}')
+$ kubectl create ns kubernetes-dashboard
+$ kubectl apply -f admin.yaml
+$ kubectl apply -f admin-binding.yaml
+$ kubectl -n kubernetes-dashboard describe secret \
+      $(kubectl -n kubernetes-dashboard get secret | \
+        grep admin-user | awk '{print $1}')
 ```
 
 More details on [Kubernetes Authentication](https://kubernetes.io/docs/reference/access-authn-authz/authentication/).
@@ -104,20 +111,30 @@ created using:
 
 # 2-tier Service in Kubernetes
 
-`TODO: this is still based on a Pod; should be refactored to a StatefulSet`
+## Backing DB (MongoDB 3.7.9)
 
-First create the backing DB (based on MongoDB):
+First create the backing DB cluster (a MongoDB ReplicaSet, :
 
     kubectl apply -f config/backend.yaml
 
-This will create a `PersistentVolumeClaim` that will be mounted by the
-`mongo` Pod and will retain data across restarts (this is not, however
-a `StatefulSet`).
+This will create a 3-node replicated cluster `StatefulSet`, and the respective
+`PersistentVolumeClaim`s that will be mounted by the `mongo-node-x` Pods and will retain data
+across restarts:
 
-The "fronting" service for this Pod makes it reachable via:
 
-    mongodb://backend:27017
+In order to initialize the Mongo Replicaset (**not** a Kubernetes `ReplicaSet`) one needs to run
+ the initializaion script:
 
+    kubectl exec -i mongo-node-0 -- mongo mongo-node-0.mongo-cluster/local < mongo/mongo-replica.js
+
+The cluster is reachable at the following URI:
+
+    mongodb://mongo-node-0.mongo-cluster,mongo-node-1.mongo-cluster,mongo-node-2.mongo-cluster:27017
+
+(see also the `ConfigMap` defined in `frontend.yaml`).
+
+
+## Frontend (Web) Service (Python Flask server)
 
 The front-end Web tier (load-balanced via the `frontend` Service) is created via a `Deployment`
 composed of `replicas` nodes (currently, 3):
@@ -131,15 +148,31 @@ Check that the web servers are up and running:
 Inside the cluster, several `Env` variables will point to various services; however,
 the K8s DNS will resolve the services (using the `Service`'s `name`).
 
-You can deploy the `utils` Pod to have access to a few utilities (`curl`, `nslookup`, etc.) from within the cluster:
+The service is exposed on port `31000` of the Node's IP address:
+
+    minikube service list
+    
+will show exactly the URL to hit to reach the service:
+
+    |-------------|---------------|--------------|----------------------------|
+    |  NAMESPACE  |     NAME      | TARGET PORT  |            URL             |
+    |-------------|---------------|--------------|----------------------------|
+    | default     | frontend      | http/80      | http://192.168.5.130:31000 |
+
+
+## Utility pod (`massenz/dnsutils`)
+
+You can deploy the `utils` Pod to have access to a few utilities (
+`curl`, `nslookup`, etc.) from within the cluster:
 
 ```
 kubectl apply -f configs/utils.yaml
 ```
 
+In particular, [`httpie`](https://httpie.org/docs) is quite useful to probe around the API:
+
 ```bash
-$ kubectl exec -it utils -- \
-        curl -v http://frontend/config | python -m json.tool
+$ kubectl exec -it utils -- http frontend/config
 
 {
     "application_root": "/",
@@ -152,21 +185,37 @@ $ kubectl exec -it utils -- \
     ...
 }
 
-$ kubectl exec -it utils -- \
-        curl -X POST -d '{"_id": "100", "name": "Rebo", "job": "Cisco"}' \
-          -H "Content-type: application/json" \
-          http://frontend/api/v1/entity
+$ kubectl exec -it utils -- http frontend/api/v1/entity name=Marco job=Architect company=Adobe
 
-{"msg":"inserted"}
+HTTP/1.0 201 CREATED
+Content-Length: 19
+Content-Type: application/json
+Date: Mon, 07 Sep 2020 07:26:30 GMT
+Location: http://frontend/api/v1/entity/5f55e0a6baa67e0325d2cd9d
+Server: Werkzeug/1.0.1 Python/3.7.9
 
-$ kubectl exec -it frontend-cluster-4q8j5 -- curl -fs \
-          -H "Content-type: application/json" \
-          http://frontend/api/v1/entity/100
+{
+    "msg": "inserted"
+}
 
-[{"_id": "100", "job": "Cisco", "name": "Rebo"}]
+$ kubectl exec -it utils -- http frontend/api/v1/entity/5f55e0a6baa67e0325d2cd9d
+HTTP/1.0 200 OK
+Content-Length: 85
+Content-Type: application/json
+Date: Mon, 07 Sep 2020 07:27:16 GMT
+Server: Werkzeug/1.0.1 Python/3.7.9
+
+{
+    "company": "Adobe",
+    "id": "5f55e0a6baa67e0325d2cd9d",
+    "job": "Architect",
+    "name": "Marco"
+}
 ```
 
 # Ingress Controller
+
+    TODO(marco): This is currently NOT working.
 
 Deployed in the manner described above, the service is unreachable from outside the Kubernetes cluster; in order to make it reachable, we deploy an [NGNIX Ingress Controller](https://kubernetes.github.io/ingress-nginx/).
 
@@ -252,100 +301,3 @@ and (optionally) modify `/etc/hosts` so that `frontend.info` points to the `mini
 
 **NOTE**
 > This is only to emulate a DNS service that would map the cluster/service domain - it is entirely irrelevant for the purposes of the example here.
-
-
-### Deploy the `v2` service
-
-Right now, however, as we haven't deployed yet the `kmaps-v2` service, `http://frontend.info/kmaps/v2/` will yield a `503 Service Unavailable` response (which is different from the `404` one would get by simply using a random URL).
-
-Checkout the `v2` tag, and build the new container:
-
-**NOTE**
-> `VERSION` may be different but **must** match the value in `frontend-v2.yaml`
-
-
-```bash
-VERSION=0.6.6 && \
-    IMAGE="massenz/simple-flask" && \
-    docker build -t $IMAGE:$VERSION -f docker/Dockerfile . && \
-    docker push $IMAGE:$VERSION
-```
-and deploy the new version *alongside* the older one:
-
-    kubectl apply -f configs/frontend-v2.yaml
-
-**NOTE**
-> We are **not** executing a rollout deployment of the new version: the point of this exercise is to demonstrate how two distinct versions/deployment of the same service can live alongside the same Kubernetes cluster, and an Ingress controller may be used to direct traffic to the correct one according to a URL pattern.
-
-then expose the `kmaps-v2` service:
-
-    kubectl expose deployment frontend-v2 --port 80 --target-port 8080 \
-        --type NodePort --name kmaps-v2
-
-At this point, the new version of the service is reachable via:
-
-    curl -fs http://frontend.info/kmaps/v2
-
-and note the returned page is for the new service:
-
-```html
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/html">
-  <head lang="en">
-    <meta charset="UTF-8">
-    <link rel="stylesheet" type="text/css"
-          href="/kmaps/v2/static/stylesheet.css">
-    <link rel="shortcut icon" href="/kmaps/v2/static/favicon.ico">
-    <title>Simple Flask Server</title>
-  </head>
-  <body>
-    <div><img src="/kmaps/v2/static/logo.png" height="42" width="42">
-        <h1>KMaps Web Server - v2</h1>
-    </div>
-    ...
-```
-
-It is important to note how the URL had to be "rewritten" so that when the controller rewrites them, the resulting path matches the file location:
-
-        <img src="/kmaps/v2/static/logo.png" height="42" width="42">
-
-was generated in Python dynamically via:
-
-```python
-@application.context_processor
-def utility_processor():
-    url_prefix = application.config['URL_PREFIX']
-
-    def static(resource):
-        # `url_for` returns the leading / as it is computed as an absolute path.
-        return f"{url_prefix}{url_for('static', filename=resource)}"
-    return dict(static_for=static)
-
-```
-
-and the `URL_PREFIX` configuration was obtained via the `ConfigMap` for [`frontend-v2`](specs/frontend-v2.yaml):
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: frontend-config-v2
-
-data:
-  config.yaml: |
-    server:
-      workdir: /var/lib/flask
-      url_prefix: /kmaps/v2
-      url_v1: /kmaps
-...
-```
-
-Equally, the link back to `v1` can be provided by dynamically loading it from the same configuration (`url_v1`) in [`index.html`](app/templates/index.html):
-
-```html
-    {% if v1_url %}
-    <div>
-        <h6>If you prefer you can <a href="{{ v1_url }}">go back to v1</a></h6>
-    </div>
-    {% endif %}
-```

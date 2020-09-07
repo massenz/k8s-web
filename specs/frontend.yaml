@@ -81,12 +81,12 @@ metadata:
 
 data:
   config.yaml: |
-    # Used as ConfigMap to run the server in k8s.
+    # Configuration file for the Flask Frontend.
+    # Mounted from a ConfigMap.
+    #
     server:
-      workdir: /var/lib/flask
-
+      workdir: /var/local/share/k8s-web
     db:
-      # Here the 'hostname' must match the Service `name`
-      # fronting the backend (see backend-service.yaml)
-      uri: "mongodb://backend:27017/my-db"
-      collection: "sampledata"
+      # The URI matches the <pod-name>-<seq>.<service-name>
+      uri: "mongodb://mongo-node-0.mongo-cluster,mongo-node-1.mongo-cluster,mongo-node-2.mongo-cluster:27017/demo-db"
+      collection: "entities"
