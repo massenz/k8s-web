@@ -51,7 +51,7 @@ MONGO_HEALTH_KEYS = (
 )
 
 
-application = Flask(__name__)
+server = Flask(__name__)
 
 
 class ResponseError(Exception):
@@ -83,16 +83,17 @@ class NotFound(ResponseError):
 
 
 def get_workdir():
-    workdir = application.config.get('WORKDIR')
+    workdir = server.config.get('WORKDIR')
     if not workdir or not os.path.isabs(workdir):
-        raise ResponseError('{0} not an absolute path'.format(workdir))
+        raise ResponseError(f"{workdir} is not an absolute path")
     return workdir
 
 
 # Context Processor for Template
-@application.context_processor
+@server.context_processor
 def utility_processor():
-    url_prefix = application.config['URL_PREFIX']
+    url_prefix = server.config['URL_PREFIX']
+
     def static(resource):
         # `url_for` returns the leading / as it is computed as an absolute path.
         return f"{url_prefix}{url_for('static', filename=resource)}"
@@ -100,21 +101,21 @@ def utility_processor():
 
 
 # Endpoints and Views
-@application.route('/')
+@server.route('/')
 def home():
     return render_template('index.html',
                            workdir=get_workdir(),
                            version=version(),
-                           v1_url=application.config['URL_V1'])
+                           v1_url=server.config['URL_V1'])
 
 
-@application.route('/favicon.ico')
+@server.route('/favicon.ico')
 def favicon():
-    return send_from_directory(os.path.join(application.root_path, 'static'),
+    return send_from_directory(os.path.join(server.root_path, 'static'),
                                'favicon.png', mimetype='image/vnd.microsoft.icon')
 
 
-@application.route('/health')
+@server.route('/health')
 def health():
     """ A simple health-chek endpoint
 
@@ -127,7 +128,7 @@ def health():
     return '{"status": "UP"}'
 
 
-@application.route('/ready')
+@server.route('/ready')
 def ready():
     """ A readiness endpoint, checks on DB health too.
 
@@ -136,7 +137,7 @@ def ready():
     """
     try:
         # TODO: Move to a DAO class
-        client = pymongo.MongoClient(application.config['DB_URI'], serverSelectionTimeoutMS=250)
+        client = pymongo.MongoClient(server.config['DB_URI'], serverSelectionTimeoutMS=250)
         info = {}
         for key in MONGO_HEALTH_KEYS:
             info[key] = client.server_info().get(key, "null")
@@ -152,7 +153,7 @@ def ready():
     return response
 
 
-@application.route('/config')
+@server.route('/config')
 def get_configs():
     """ Configuration values
 
@@ -162,33 +163,33 @@ def get_configs():
         'health': 'UP',
         'cookies': request.cookies
     }
-    is_debug = application.config.get('DEBUG')
-    for key in application.config.keys():
+    is_debug = server.config.get('DEBUG')
+    for key in server.config.keys():
         # In a non-debug session, sensitive config values are masked
         # TODO: it would be probably better to hash them (with a secure hash such as SHA-256)
         # using the application.config['SECRET_KEY']
         if not is_debug and key in SENSITIVE_KEYS:
             varz = "*******"
         else:
-            varz = application.config.get(key)
+            varz = server.config.get(key)
         # Basic types can be sent back as they are, others need to be converted to strings
         if varz is not None and not (isinstance(varz, bool) or isinstance(varz, int)):
             varz = str(varz)
         configz[key.lower()] = varz
     response = make_response(jsonify(configz))
     randval = random.randint(1000, 9999)
-    application.logger.info(f"Setting cookie value to {randval}")
+    server.logger.info(f"Setting cookie value to {randval}")
     response.set_cookie('y-track', value=f"config-tracker-{randval}", path="/config")
     return response
 
 
-@application.route('/api/v1/entity/<id>')
+@server.route('/api/v1/entity/<id>')
 def get_entity(id):
     """Tries to connect to the db and retrieve the entity show ID is `id`"""
     # TODO: Move to a DAO class
-    client = pymongo.MongoClient(application.config['DB_URI'])
+    client = pymongo.MongoClient(server.config['DB_URI'])
     db = client.get_database()
-    coll = db.get_collection(application.config['DB_COLLECTION'])
+    coll = db.get_collection(server.config['DB_COLLECTION'])
     try:
         oid = ObjectId(id)
     except InvalidId as error:
@@ -200,13 +201,13 @@ def get_entity(id):
     return make_response(jsonify(result))
 
 
-@application.route('/api/v1/entity', methods=['POST'])
+@server.route('/api/v1/entity', methods=['POST'])
 def create_entity():
     """Creates a new entity in the DB, and returns its URI in the `Location` header"""
     # TODO: Move to a DAO class
-    client = pymongo.MongoClient(application.config['DB_URI'])
+    client = pymongo.MongoClient(server.config['DB_URI'])
     db = client.get_database()
-    coll = db.get_collection(application.config['DB_COLLECTION'])
+    coll = db.get_collection(server.config['DB_COLLECTION'])
     res = coll.insert_one(request.json)
     response = make_response(jsonify({"msg": "inserted"}))
     response.status_code = 201
@@ -214,7 +215,7 @@ def create_entity():
     return response
 
 
-@application.route('/statuscode/<code>')
+@server.route('/statuscode/<code>')
 def statuscode(code):
     logging.info(f"Returning code {code}")
     if code == "666":
@@ -225,7 +226,7 @@ def statuscode(code):
         raise ResponseError(f"{code} is not a valid integer status code")
 
 
-@application.errorhandler(ResponseError)
+@server.errorhandler(ResponseError)
 def handle_invalid_usage(error):
     logging.error(error.message)
     response = jsonify(error.to_dict())
@@ -233,14 +234,14 @@ def handle_invalid_usage(error):
     return response
 
 
-@application.errorhandler(404)
+@server.errorhandler(404)
 def handle_notfound(error):
     message = f"The path `{request.path}` was not found on this server [{request.url}]"
     logging.error(error)
     return message, 404
 
 
-@application.before_first_request
+@server.before_first_request
 def config_app():
     pass
 
@@ -251,20 +252,19 @@ def prepare_env(config=None):
     :param config: the L{Namespace} object, obtained from parsing the options
     :type config: argparse.Namespace or None
     """
-    application.config['RUNNING_AS'] = os.getenv('USER', 'unknown')
+    server.config['RUNNING_AS'] = os.getenv('USER', 'unknown')
     debug = SaneBool(choose('FLASK_DEBUG', False, config, 'debug'))
-    application.config['DEBUG'] = debug
+    server.config['DEBUG'] = debug
 
     loglevel = logging.DEBUG if debug else logging.INFO
     logging.basicConfig(format=FORMAT, datefmt=DATE_FMT, level=loglevel)
 
     # Flask apparently does not store this internally.
-    application.config['PORT'] = config.port
-    application.config['SECURE_PORT'] = config.secure_port
+    server.config['PORT'] = config.port
 
     # Flask application configuration
-    application.config['TESTING'] = choose('FLASK_TESTING', False)
-    application.config['SECRET_KEY'] = choose('FLASK_SECRET_KEY', 'd0n7useth15', config,
+    server.config['TESTING'] = choose('FLASK_TESTING', False)
+    server.config['SECRET_KEY'] = choose('FLASK_SECRET_KEY', 'd0n7useth15', config,
                                               'secret_key')
 
     if not config.config_file:
@@ -275,8 +275,8 @@ def prepare_env(config=None):
 
     with config_file.open('r') as cfg:
         configs = yaml.safe_load(cfg)
-        application.config['DB_URI'] = configs['db']['uri']
-        application.config['DB_COLLECTION'] = configs['db']['collection']
-        application.config['URL_PREFIX'] = configs['server'].get('url_prefix', '')
-        application.config['URL_V1'] = configs['server'].get('url_v1')
-        application.config['WORKDIR'] = config.workdir or configs['server'].get('workdir', '/tmp')
+        server.config['DB_URI'] = configs['db']['uri']
+        server.config['DB_COLLECTION'] = configs['db']['collection']
+        server.config['URL_PREFIX'] = configs['server'].get('url_prefix', '')
+        server.config['URL_V1'] = configs['server'].get('url_v1')
+        server.config['WORKDIR'] = config.workdir or configs['server'].get('workdir', '/tmp')

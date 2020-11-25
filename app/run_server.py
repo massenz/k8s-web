@@ -4,7 +4,7 @@
 import argparse
 import pathlib
 
-from application import prepare_env, application, ResponseError
+from application import prepare_env, server, ResponseError
 
 CONFIG_FILE = pathlib.Path("/etc/flask/config.yaml")
 
@@ -14,9 +14,6 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', help="The port for the server to listen on", type=int,
                         default=5050)
-
-    parser.add_argument('-s', '--secure-port', help="The TLS port for the server to listen on",
-                        type=int, default=5443)
 
     parser.add_argument('--debug', action='store_true', help="Turns on debugging/testing mode and "
                                                              "disables authentication")
@@ -45,11 +42,9 @@ def run_server():
     """
     config = parse_args()
     prepare_env(config)
-
-    # TODO(marco): enable TLS
-    application.run(host=config.accept_external,
-                    debug=config.debug,
-                    port=config.port)
+    server.run(host=config.accept_external,
+               debug=config.debug,
+               port=config.port)
 
 
 if __name__ == '__main__':
