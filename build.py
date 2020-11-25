@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # Builds the container and pushes to Docker Hub
+import os
 import sys
 from pathlib import Path
 
@@ -10,6 +11,10 @@ from app.utils import version
 
 IMAGE = "massenz/simple-flask"
 DOCKERFILE = Path("docker")/"Dockerfile"
+
+basedir = Path(__file__).parent.absolute()
+os.chdir(f"{basedir!s}")
+print(f"Building server container from: {basedir!s}")
 
 image = f"{IMAGE}:{version()}"
 

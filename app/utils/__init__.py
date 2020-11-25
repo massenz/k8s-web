@@ -5,7 +5,7 @@ import pathlib
 import re
 
 
-VERSION_PATTERN = re.compile('^\s*version\s*=\s*(?P<version>[0-9.]+)-?(?P<build>\w+)?$')
+VERSION_PATTERN = re.compile(r"^\s*version\s*=\s*(?P<version>[0-9.]+)-?(?P<build>\w+)?$")
 
 
 class SaneBool(object):
@@ -106,29 +106,30 @@ def choose(key, default, config=None, config_attr=None):
 
 
 def version():
-    for line in read_settings():
+    for line in settings():
         m = re.match(VERSION_PATTERN, line)
         if m:
             return m.group('version')
 
 
 def build():
-    for line in read_settings():
+    for line in settings():
         m = re.match(VERSION_PATTERN, line)
         if m:
             return m.group('build')
 
 
-def read_settings():
+def settings(basedir=None):
     """ Returns the Project's settings as an iterable"""
-    basedir = os.getenv("BASEDIR", '')
-    settings = pathlib.Path(basedir) / "build.settings"
-    if not settings.exists():
+    basedir = basedir or pathlib.Path.cwd()
+    build_settings = basedir / "build.settings"
+    if not build_settings.exists():
         ex = FileNotFoundError()
-        ex.filename = str(settings.absolute())
+        ex.filename = str(build_settings.absolute())
         ex.errno = 'ENOENT'
         ex.strerror = "Build settings file missing (no version information available)"
         raise ex
-    with settings.open() as build_settings:
-        for line in build_settings.readlines():
-            yield line
+    with build_settings.open() as f:
+        for line in f.readlines():
+            if not line.startswith("#"):
+                yield line
