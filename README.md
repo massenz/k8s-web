@@ -34,7 +34,7 @@ You can change some of the server arguments using the following `--env` args:
 
 ```
 $ docker run --rm -d -p 8088:8080 massenz/simple-flask:$VERSION \
-     --env DEBUG='true' SERVER_PORT=9900 SECRET='chang3Me'
+     --env DEBUG='--debug' SERVER_PORT=9900 SECRET='chang3Me'
 ```
 
 These can be re-defined either using `--env` with `docker run` or via the usual Kubernets method to inject `env` arguments in the template.
@@ -125,7 +125,7 @@ across restarts:
 In order to initialize the Mongo Replicaset (**not** a Kubernetes `ReplicaSet`) one needs to run
  the initializaion script:
 
-    kubectl exec -i mongo-node-0 -- mongo mongo-node-0.mongo-cluster/local < mongo/mongo-replica.js
+    kubectl exec -i mongo-node-0 -- mongo mongo-node-0.mongo-cluster/local < mongo/mongo-replicas.js
 
 The cluster is reachable at the following URI:
 
