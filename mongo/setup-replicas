@@ -2,5 +2,8 @@
 # Created by M. Massenzio
 
 echo "Setting up Mongo DB Replicas for host ${MONGO_URL}"
-mongo --host ${MONGO_URL} mongo-replicas.js
+mongo --host ${MONGO_URL}  --eval "const clustersize = ${REPLICAS};
+    const nodename = \"${NODE_NAME}\";
+    const clustername = \"${CLUSTER_NAME}\";" mongo-replicas.js
+
 echo "Done"

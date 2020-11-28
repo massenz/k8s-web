@@ -2,16 +2,10 @@
 // Created by M. Massenzio
 //
 // Creates a Mongo Replica Set.
-// TODO: make the number of nodes and their DNS names configurable.
-
-const clustersize = 3
-const nodename = "mongo-node-";
-const clustername = ".mongo-cluster";
 
 let nodes = [];
-
 for(let i = 0; i < clustersize; i = i +1) {
-    nodes[i] = {_id: i, host: nodename + i + clustername};
+    nodes[i] = {_id: i, host: nodename + "-" + i + "." + clustername};
 }
 
 rs.initiate({

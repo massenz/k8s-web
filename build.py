@@ -12,24 +12,25 @@ from halo import Halo
 from sh import docker, ErrorReturnCode
 from app.utils import version
 
-IMAGE = "massenz/simple-flask"
-DOCKERFILE = Path("docker")/"Dockerfile"
 
 basedir = Path(__file__).parent.absolute()
 os.chdir(f"{basedir!s}")
 print(f"Building server container from: {basedir!s}")
 
-image = f"{IMAGE}:{version()}"
 
 try:
-    with Halo(text=f"Building container {image}", spinner='dots'):
-        res = docker.build("-t", image, "-f", f"{DOCKERFILE}", ".")
-    print(f"[SUCCESS] Image {image} built")
+    for name in ("simple-flask", "mongo-replicas"):
+        image = f"massenz/{name}:{version()}"
+        dockerfile = Path("docker") / f"Dockerfile.{name}"
 
-    if len(sys.argv) > 1 and sys.argv[1] == "--push":
-        with Halo(text=f"Pushing container {image}", spinner='dots'):
-            res = docker.push(f"{image}")
-        print(f"[SUCCESS] Image {image} pushed to DockerHub")
+        with Halo(text=f"Building container {image}", spinner='dots'):
+            res = docker.build("-t", image, "-f", f"{dockerfile}", ".")
+        print(f"[SUCCESS] Image {image} built")
+
+        if len(sys.argv) > 1 and sys.argv[1] == "--push":
+            with Halo(text=f"Pushing container {image}", spinner='dots'):
+                res = docker.push(f"{image}")
+            print(f"[SUCCESS] Image {image} pushed to DockerHub")
 
 except ErrorReturnCode as err:
     print(err.stdout)
