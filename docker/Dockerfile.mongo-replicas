@@ -4,10 +4,10 @@
 # Starts the Mongo Replica Set.
 
 FROM mongo:3.7
-
-# TODO: replace with MONGO_NODE_NAME and MONGO_CLUSTER_NAME when automating script creation.
-ENV MONGO_URL="mongo-node-0.mongo-cluster"
 ENV REPLICAS=3
+ENV NODE_NAME="mongo-node"
+ENV CLUSTER_NAME="mongo-cluster"
+ENV MONGO_URL="${NODE_NAME}-0.${CLUSTER_NAME}"
 
 WORKDIR /opt/mongo-replicas
 
