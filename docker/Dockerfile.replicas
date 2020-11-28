@@ -1,0 +1,18 @@
+# Copyright (c) 2020 AlertAvert.com  All rights reserved.
+# Created by M. Massenzio, 2020-11-27
+#
+# Starts the Mongo Replica Set.
+
+FROM mongo:3.7
+
+# TODO: replace with MONGO_NODE_NAME and MONGO_CLUSTER_NAME when automating script creation.
+ENV MONGO_URL="mongo-node-0.mongo-cluster"
+ENV REPLICAS=3
+
+WORKDIR /opt/mongo-replicas
+
+ADD mongo/mongo-replicas.js ./
+ADD mongo/setup-replicas ./
+RUN chmod +x ./setup-replicas
+
+ENTRYPOINT ./setup-replicas

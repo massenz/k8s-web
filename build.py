@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+#
+# Copyright (c) 2020 AlertAvert.com  All rights reserved.
+# Created by M. Massenzio, 2020-11-24
 
 # Builds the container and pushes to Docker Hub
 import os

@@ -1,4 +1,5 @@
-# Created by M. Massenzio (c) 2018-2019
+# Copyright (c) 2020 AlertAvert.com  All rights reserved.
+# Created by M. Massenzio
 
 FROM python:3.7-slim
 MAINTAINER Marco Massenzio (marco@alertavert.com)
