@@ -36,7 +36,6 @@ import pymongo
 
 from utils import choose, SaneBool, version
 
-
 FORMAT = '%(asctime)-15s [%(levelname)s] %(message)s'
 DATE_FMT = '%m/%d/%Y %H:%M:%S'
 SENSITIVE_KEYS = (
@@ -49,7 +48,6 @@ SENSITIVE_KEYS = (
 MONGO_HEALTH_KEYS = (
     "debug", "ok", "version"
 )
-
 
 server = Flask(__name__)
 
@@ -97,6 +95,7 @@ def utility_processor():
     def static(resource):
         # `url_for` returns the leading / as it is computed as an absolute path.
         return f"{url_prefix}{url_for('static', filename=resource)}"
+
     return dict(static_for=static)
 
 
@@ -201,14 +200,31 @@ def get_entity(id):
     return make_response(jsonify(result))
 
 
+@server.route('/api/v1/entity')
+def get_all_entities():
+    """Retrieves all entities from the Db"""
+    client = get_mongo_client()
+    db = client.get_database()
+    coll = db.get_collection(server.config['DB_COLLECTION'])
+    results = coll.find()
+    response = []
+    for result in results:
+        result["id"] = str(result.pop("_id"))
+        response.append(result)
+    return make_response(jsonify(response))
+
+
 # TODO: update the TLS configuration to be configurable via CLI args.
 def get_mongo_client():
-    client = pymongo.MongoClient(server.config['DB_URI'],
-                                 tls=True,
-                                 tlsAllowInvalidCertificates=True,
-                                 tlsCAFile='/etc/aws/ca-bundle.pem',
-                                 serverSelectionTimeoutMS=250)
-    return client
+    tls = server.config['TLS']
+    connection_params = {
+        'tls': tls,
+        'serverSelectionTimeoutMS': 250
+    }
+    if tls:
+        connection_params['tlsAllowInvalidCertificates'] = server.config['TLS_ALLOW_INVALID']
+        connection_params['tlsCAFile'] = server.config['TLS_CA_FILE']
+    return pymongo.MongoClient(server.config['DB_URI'], **connection_params)
 
 
 @server.route('/api/v1/entity', methods=['POST'])
@@ -275,7 +291,7 @@ def prepare_env(config=None):
     # Flask application configuration
     server.config['TESTING'] = choose('FLASK_TESTING', False)
     server.config['SECRET_KEY'] = choose('FLASK_SECRET_KEY', 'd0n7useth15', config,
-                                              'secret_key')
+                                         'secret_key')
 
     configs = {'db': {}, 'server': {}}
     if config.config_file:
@@ -292,3 +308,8 @@ def prepare_env(config=None):
     server.config['URL_PREFIX'] = configs['server'].get('url_prefix', '')
     server.config['URL_V1'] = configs['server'].get('url_v1', '')
     server.config['WORKDIR'] = config.workdir or configs['server'].get('workdir', '/tmp')
+
+    # TLS Configuration entirely driven by Environment variables.
+    server.config['TLS'] = os.getenv('MONGO_TLS') is not None
+    server.config['TLS_CA_FILE'] = os.getenv('MONGO_TLS_CA_FILE')
+    server.config['TLS_ALLOW_INVALID'] = os.getenv('MONGO_TLS_ALLOW_INVALID') is not None
