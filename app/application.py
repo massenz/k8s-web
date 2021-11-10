@@ -137,7 +137,7 @@ def ready():
     """
     try:
         # TODO: Move to a DAO class
-        client = pymongo.MongoClient(server.config['DB_URI'], serverSelectionTimeoutMS=250)
+        client = get_mongo_client()
         info = {}
         for key in MONGO_HEALTH_KEYS:
             info[key] = client.server_info().get(key, "null")
@@ -187,7 +187,7 @@ def get_configs():
 def get_entity(id):
     """Tries to connect to the db and retrieve the entity show ID is `id`"""
     # TODO: Move to a DAO class
-    client = pymongo.MongoClient(server.config['DB_URI'])
+    client = get_mongo_client()
     db = client.get_database()
     coll = db.get_collection(server.config['DB_COLLECTION'])
     try:
@@ -201,11 +201,21 @@ def get_entity(id):
     return make_response(jsonify(result))
 
 
+# TODO: update the TLS configuration to be configurable via CLI args.
+def get_mongo_client():
+    client = pymongo.MongoClient(server.config['DB_URI'],
+                                 tls=True,
+                                 tlsAllowInvalidCertificates=True,
+                                 tlsCAFile='/etc/aws/ca-bundle.pem',
+                                 serverSelectionTimeoutMS=250)
+    return client
+
+
 @server.route('/api/v1/entity', methods=['POST'])
 def create_entity():
     """Creates a new entity in the DB, and returns its URI in the `Location` header"""
     # TODO: Move to a DAO class
-    client = pymongo.MongoClient(server.config['DB_URI'])
+    client = get_mongo_client()
     db = client.get_database()
     coll = db.get_collection(server.config['DB_COLLECTION'])
     res = coll.insert_one(request.json)
@@ -267,16 +277,18 @@ def prepare_env(config=None):
     server.config['SECRET_KEY'] = choose('FLASK_SECRET_KEY', 'd0n7useth15', config,
                                               'secret_key')
 
-    if not config.config_file:
-        raise ValueError("A configuration file MUST be provided, use --config-file")
-    config_file = pathlib.Path(config.config_file)
-    if not config_file.exists():
-        raise FileNotFoundError(f"Configuration file {config.config_file} does not exist")
+    configs = {'db': {}, 'server': {}}
+    if config.config_file:
+        config_file = pathlib.Path(config.config_file)
+        if config_file.exists():
+            with config_file.open('r') as cfg:
+                configs = yaml.safe_load(cfg)
+        else:
+            print(f"[WARN] Missing configuration file {config.config_file}, using defaults")
 
-    with config_file.open('r') as cfg:
-        configs = yaml.safe_load(cfg)
-        server.config['DB_URI'] = configs['db']['uri']
-        server.config['DB_COLLECTION'] = configs['db']['collection']
-        server.config['URL_PREFIX'] = configs['server'].get('url_prefix', '')
-        server.config['URL_V1'] = configs['server'].get('url_v1')
-        server.config['WORKDIR'] = config.workdir or configs['server'].get('workdir', '/tmp')
+    server.config['DB_URI'] = config.db_uri or configs['db'].get('uri',
+                                                                 'mongodb://localhost:27017/')
+    server.config['DB_COLLECTION'] = configs['db'].get('collection', 'simple-data')
+    server.config['URL_PREFIX'] = configs['server'].get('url_prefix', '')
+    server.config['URL_V1'] = configs['server'].get('url_v1', '')
+    server.config['WORKDIR'] = config.workdir or configs['server'].get('workdir', '/tmp')
