@@ -1,0 +1,41 @@
+# Copyright (c) 2020 AlertAvert.com  All rights reserved.
+# Created by M. Massenzio
+
+FROM python:3.7-slim
+MAINTAINER Marco Massenzio (marco@alertavert.com)
+
+ENV DEBUG=""
+ENV SERVER_PORT=8080
+ENV WORKINGDIR="/var/local/share/k8s-web"
+ENV CONFIG="${WORKINGDIR}/config.yaml"
+ENV DB_URI="mongodb://mongo:27017/data"
+
+WORKDIR /opt/web
+
+RUN mkdir -p ${WORKINGDIR}
+ADD requirements.txt ./
+RUN pip install -U pip && \
+    pip install -r requirements.txt
+
+# Installing AWS Public key for TLS connection to DocumentDB
+# This will be used in the following connections arguments:
+#   ssl = true
+#   ssl_ca_certs = /etc/aws/ca-bundle.pem
+#
+ADD rds-combined-ca-bundle.pem /etc/aws/ca-bundle.pem
+
+ADD app/ ./
+ADD build.settings docker/entrypoint.sh ./
+RUN chmod +x entrypoint.sh
+
+# This is only a placeholder and will only work for local development.
+# The actual config.yaml should be installed via a ConfigMap when
+# deploying to Kubernetes.
+ADD dev-config.yaml ${CONFIG}
+
+
+EXPOSE ${SERVER_PORT}
+
+# "Exec" form of ENTRYPOINT
+# See: https://codetrips.com/2021/03/31/docker-entrypoint-and-a-note-about/
+ENTRYPOINT ["./entrypoint.sh"]
