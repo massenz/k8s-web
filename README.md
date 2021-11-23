@@ -1,9 +1,9 @@
 # Simple Web Application -- k8s-webserver
 
-![Version](https://img.shields.io/badge/Version-0.6.1-blue)
-![Released](https://img.shields.io/badge/Released-2020.11.27-green)
+![Version](https://img.shields.io/badge/Version-0.7.4-blue)
+![Released](https://img.shields.io/badge/Released-2021.11.22-green)
 
-[![Author](https://img.shields.io/badge/Author-M.%20Massenzio-green)](https://bitbucket.org/marco)
+[![Author](https://img.shields.io/badge/Author-M.%20Massenzio-green)](https://github.com/massenz)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 ![OS Debian](https://img.shields.io/badge/OS-Linux-green)
 

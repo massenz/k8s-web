@@ -6,6 +6,19 @@ import re
 
 
 VERSION_PATTERN = re.compile(r"^\s*version\s*=\s*(?P<version>[0-9.]+)-?(?P<build>\w+)?$")
+FORMAT = '%(asctime)-15s [%(levelname)s] %(message)s'
+DATE_FMT = '%m/%d/%Y %H:%M:%S'
+SENSITIVE_KEYS = (
+    'SESSION_COOKIE_DOMAIN',
+    'SESSION_COOKIE_PATH',
+    'RUNNING_AS',
+    'SECRET_KEY',
+)
+
+DEFAULT_MONGODB_URI = 'mongodb://localhost:27017/k8s-web-data'
+MONGO_HEALTH_KEYS = (
+    "debug", "ok", "version"
+)
 
 
 class SaneBool(object):
@@ -101,8 +114,8 @@ def choose(key, default, config=None, config_attr=None):
     config_value = None
     if config and hasattr(config, config_attr):
         config_value = getattr(config, config_attr)
-    os_env_value = os.getenv(key)
-    return config_value or os_env_value or default
+    os_env_value = os.getenv(key, default)
+    return config_value if config_value is not None else os_env_value
 
 
 def version():

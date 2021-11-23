@@ -2,15 +2,12 @@
 # Created by M. Massenzio, 2020-11-24
 #
 # Configuration file for local development.
+# Each entry replaces the CLI option of the same name (see run_server.py, parse_args())
 #
-# Run Mongo as a Container with:
-#   $ docker run --rm -d -p27017:27017 --name mongodb mongo:3.7
-#
-# Run the server with:
-#   $ ./run_server.py --debug -p 5500 --config-file ../dev-config.yaml
-#
-server:
-  workdir: /var/local/share/k8s-web
-db:
-  uri: "mongodb://localhost:27017/dev-db"
-  collection: "entities"
+# Command-line args passed at runtime take priority over the values in the config file.
+
+workdir: "/var/local/share/k8s-web"
+db-uri: "mongodb://localhost:27017"
+collection: "dev-data"
+secret-key: "don7u53th15"
+debug: true

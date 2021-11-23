@@ -2,11 +2,9 @@
 
 
 import argparse
-import pathlib
 
-from application import prepare_env, server, ResponseError
-
-CONFIG_FILE = pathlib.Path("/etc/flask/config.yaml")
+from application import server
+from utils.prepare import prepare_env
 
 
 def parse_args():
@@ -18,6 +16,12 @@ def parse_args():
     parser.add_argument('--debug', action='store_true', help="Turns on debugging/testing mode and "
                                                              "disables authentication")
 
+    parser.add_argument('--tls', action='store_true', help="If set, enables TLS connectivity")
+    parser.add_argument('--tls-ca-file', help="The location of the CA Bundle")
+    parser.add_argument('--tls-allow-invalid', action='store_true',
+                        help="If set, allows TLS connectivity, even if certificates do not "
+                             "validate; use ONLY for development/testing")
+
     parser.add_argument('--accept-external', action='store_const', const='0.0.0.0',
                         help="By default the server will only accept incoming connections from "
                              "`localhost`; if this flag is set, it will accept incoming "
@@ -28,9 +32,7 @@ def parse_args():
 
     parser.add_argument('--workdir', help='The application working directory')
 
-    parser.add_argument('--config-file', default=CONFIG_FILE,
-                        help=f'Location of the YAML file with configuration values; by default, '
-                             f'{CONFIG_FILE}')
+    parser.add_argument('--config', help=f'Location of the YAML file with configuration values')
 
     return parser.parse_args()
 
@@ -42,7 +44,7 @@ def run_server():
     :return:
     """
     config = parse_args()
-    prepare_env(config)
+    prepare_env(server, config=config)
     server.run(host=config.accept_external,
                debug=config.debug,
                port=config.port)
@@ -53,7 +55,5 @@ if __name__ == '__main__':
         run_server()
     except KeyboardInterrupt:
         print("Terminated by user")
-    except ResponseError as error:
-        print(f"[ERROR] Response error: {error.message}")
     except Exception as ex:
         print(f"[ERROR] Unexpected error: {ex}")

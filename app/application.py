@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__author__ = 'M. Massenzio (massenz@adobe.com'
+__author__ = 'M. Massenzio (marco@alertavert.com)'
 
 import argparse
 import logging
@@ -34,20 +34,7 @@ from flask import (
 )
 import pymongo
 
-from utils import choose, SaneBool, version
-
-FORMAT = '%(asctime)-15s [%(levelname)s] %(message)s'
-DATE_FMT = '%m/%d/%Y %H:%M:%S'
-SENSITIVE_KEYS = (
-    'SESSION_COOKIE_DOMAIN',
-    'SESSION_COOKIE_PATH',
-    'RUNNING_AS',
-    'SECRET_KEY',
-)
-
-MONGO_HEALTH_KEYS = (
-    "debug", "ok", "version"
-)
+from utils import choose, SaneBool, version, MONGO_HEALTH_KEYS
 
 server = Flask(__name__)
 
@@ -90,7 +77,7 @@ def get_workdir():
 # Context Processor for Template
 @server.context_processor
 def utility_processor():
-    url_prefix = server.config['URL_PREFIX']
+    url_prefix = server.config.get('URL_PREFIX', '')
 
     def static(resource):
         # `url_for` returns the leading / as it is computed as an absolute path.
@@ -105,7 +92,7 @@ def home():
     return render_template('index.html',
                            workdir=get_workdir(),
                            version=version(),
-                           v1_url=server.config['URL_V1'])
+                           v1_url=server.config.get('URL_V1', '/v1/api'))
 
 
 @server.route('/favicon.ico')
@@ -216,7 +203,7 @@ def get_all_entities():
 
 # TODO: update the TLS configuration to be configurable via CLI args.
 def get_mongo_client():
-    tls = server.config['TLS']
+    tls = server.config.get('TLS', False)
     connection_params = {
         'tls': tls,
         'serverSelectionTimeoutMS': 250
@@ -270,46 +257,3 @@ def handle_notfound(error):
 @server.before_first_request
 def config_app():
     pass
-
-
-def prepare_env(config=None):
-    """ Initializes the application configuration
-
-    :param config: the L{Namespace} object, obtained from parsing the options
-    :type config: argparse.Namespace or None
-    """
-    server.config['RUNNING_AS'] = os.getenv('USER', 'unknown')
-    debug = SaneBool(choose('FLASK_DEBUG', False, config, 'debug'))
-    server.config['DEBUG'] = debug
-
-    loglevel = logging.DEBUG if debug else logging.INFO
-    logging.basicConfig(format=FORMAT, datefmt=DATE_FMT, level=loglevel)
-
-    # Flask apparently does not store this internally.
-    server.config['PORT'] = config.port
-
-    # Flask application configuration
-    server.config['TESTING'] = choose('FLASK_TESTING', False)
-    server.config['SECRET_KEY'] = choose('FLASK_SECRET_KEY', 'd0n7useth15', config,
-                                         'secret_key')
-
-    configs = {'db': {}, 'server': {}}
-    if config.config_file:
-        config_file = pathlib.Path(config.config_file)
-        if config_file.exists():
-            with config_file.open('r') as cfg:
-                configs = yaml.safe_load(cfg)
-        else:
-            print(f"[WARN] Missing configuration file {config.config_file}, using defaults")
-
-    server.config['DB_URI'] = config.db_uri or configs['db'].get('uri',
-                                                                 'mongodb://localhost:27017/')
-    server.config['DB_COLLECTION'] = configs['db'].get('collection', 'simple-data')
-    server.config['URL_PREFIX'] = configs['server'].get('url_prefix', '')
-    server.config['URL_V1'] = configs['server'].get('url_v1', '')
-    server.config['WORKDIR'] = config.workdir or configs['server'].get('workdir', '/tmp')
-
-    # TLS Configuration entirely driven by Environment variables.
-    server.config['TLS'] = os.getenv('MONGO_TLS') is not None
-    server.config['TLS_CA_FILE'] = os.getenv('MONGO_TLS_CA_FILE')
-    server.config['TLS_ALLOW_INVALID'] = os.getenv('MONGO_TLS_ALLOW_INVALID') is not None
