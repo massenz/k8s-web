@@ -6,8 +6,7 @@
 set -e
 
 cmd="./run_server.py ${DEBUG} -p ${SERVER_PORT} \
-        --db-uri ${DB_URI} \
-        --config-file ${CONFIG} --accept-external \
+        --config ${CONFIG} --accept-external \
         --workdir ${WORKINGDIR}"
 
 echo $cmd

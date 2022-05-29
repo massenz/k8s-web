@@ -14,13 +14,12 @@
 
 __author__ = 'M. Massenzio (marco@alertavert.com)'
 
-import argparse
 import logging
 import os
-import pathlib
 import random
-import yaml
+import requests
 
+import pymongo
 from bson import ObjectId
 from bson.errors import InvalidId
 from flask import (
@@ -32,9 +31,8 @@ from flask import (
     url_for,
     send_from_directory,
 )
-import pymongo
 
-from utils import choose, SaneBool, version, MONGO_HEALTH_KEYS
+from utils import version, MONGO_HEALTH_KEYS
 
 server = Flask(__name__)
 
@@ -222,9 +220,25 @@ def create_entity():
     db = client.get_database()
     coll = db.get_collection(server.config['DB_COLLECTION'])
     res = coll.insert_one(request.json)
-    response = make_response(jsonify({"msg": "inserted"}))
+    response = make_response(jsonify({
+        "msg": "inserted",
+        "id": f"{res.inserted_id}"
+    }))
     response.status_code = 201
     response.headers['Location'] = f'/api/v1/entity/{res.inserted_id}'
+    return response
+
+
+@server.route('/opa/<policy>', methods=['POST'])
+def send_policy(policy):
+    """Posts a Policy to the OPA Server and returns the result"""
+    endpoint = f"http://{server.config['OPA_SERVER']}/v1/data/{policy}"
+    opa_result = requests.post(endpoint, json={"input":request.json})
+    response = make_response(jsonify({
+        "policy_endpoint": endpoint,
+        "sent": request.json,
+        "result": opa_result.json().get("result")
+    }))
     return response
 
 

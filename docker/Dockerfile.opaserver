@@ -1,0 +1,7 @@
+# Copyright (c) 2020 AlertAvert.com  All rights reserved.
+# Created by M. Massenzio, 2020-11-27
+
+
+FROM openpolicyagent/opa:0.34.2
+
+CMD ["run", "--server", "--addr", ":8181"]

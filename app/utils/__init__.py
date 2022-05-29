@@ -19,6 +19,7 @@ DEFAULT_MONGODB_URI = 'mongodb://localhost:27017/k8s-web-data'
 MONGO_HEALTH_KEYS = (
     "debug", "ok", "version"
 )
+DEFAULT_OPA_SERVER = 'localhost:8181'
 
 
 class SaneBool(object):

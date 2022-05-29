@@ -19,7 +19,7 @@ print(f"Building server container from: {basedir!s}")
 
 
 try:
-    for name in ("simple-flask", "mongo-replicas"):
+    for name in ("simple-flask", "mongo-replicas", "opaserver"):
         image = f"massenz/{name}:{version()}"
         dockerfile = Path("docker") / f"Dockerfile.{name}"
 

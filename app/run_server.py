@@ -29,6 +29,8 @@ def parse_args():
 
     parser.add_argument('--secret-key', help='Used by the flask server to encrypt secure cookies')
     parser.add_argument('--db-uri', help='MongoDB URI')
+    parser.add_argument('--opa-server',
+                        help='Server address for the OPA server, in `host:port` form')
 
     parser.add_argument('--workdir', help='The application working directory')
 

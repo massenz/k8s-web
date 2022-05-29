@@ -5,7 +5,8 @@ import uuid
 
 import yaml
 
-from utils import SaneBool, choose, FORMAT, DATE_FMT, DEFAULT_MONGODB_URI, version
+from utils import SaneBool, choose, FORMAT, DATE_FMT, DEFAULT_MONGODB_URI, version, \
+    DEFAULT_OPA_SERVER
 
 
 def create_random_key():
@@ -50,6 +51,9 @@ def prepare_env(server, config=None):
         'DB_URI': choose('MONGO_DB_URI', file_args.get('db-uri', DEFAULT_MONGODB_URI),
                          config, 'db_uri'),
         'DB_COLLECTION': file_args.get('collection', 'simple-data'),
+
+        'OPA_SERVER': choose('OPA_SERVER', file_args.get('opa-server', DEFAULT_OPA_SERVER),
+                             config, 'opa_server'),
 
         'TLS': SaneBool(choose('MONGO_TLS', file_args.get('tls'), config, 'tls')),
         'TLS_CA_FILE': choose('MONGO_TLS_CA_FILE', file_args.get('tls-ca-file'),
